@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="最怕一声碌碌无为，还说平凡难得可贵">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    Synchronized总结 |
+    
+    lantao</title>
+  
+    <link rel="shortcut icon" href="/source">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-Synchronized总结" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+
+<!-- 目录内容 -->
+        
+            
+            <p class="show-toc-btn" id="show-toc-btn" onclick="showToc();" style="display:none">
+            <span class="btn-bg"></span>
+            <span class="btn-text">文章导航</span>
+            </p>
+
+            <div id="toc-article" class="toc-article">
+                <span id="toc-close" class="toc-close" title="隐藏导航" onclick="showBtn();">×</span>
+                <strong class="toc-title">文章目录</strong>
+
+                <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Synchronized的升级过程"><span class="toc-text">Synchronized的升级过程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#偏向锁："><span class="toc-text">偏向锁：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#锁撤销："><span class="toc-text">锁撤销：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#轻量级锁："><span class="toc-text">轻量级锁：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#轻量级锁解锁："><span class="toc-text">轻量级锁解锁：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#重量级锁："><span class="toc-text">重量级锁：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#优缺点："><span class="toc-text">优缺点：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#流程图："><span class="toc-text">流程图：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Synchronized-的使用"><span class="toc-text">Synchronized 的使用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#使用方法："><span class="toc-text">使用方法：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#wait-notify-notifyAll-的使用"><span class="toc-text">wait/notify/notifyAll 的使用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#注意："><span class="toc-text">注意：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解释："><span class="toc-text">解释：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#代码演示："><span class="toc-text">代码演示：</span></a></li></ol></li></ol>
+           </div>
+
+           <script type="text/javascript">
+            function showToc(){
+                var toc_article = document.getElementById("toc-article");
+                var show_toc_btn = document.getElementById("show-toc-btn");
+                toc_article.setAttribute("style","display:block");
+                show_toc_btn.setAttribute("style","display:none");
+                };
+            function showBtn(){
+                var toc_article = document.getElementById("toc-article");
+                var show_toc_btn = document.getElementById("show-toc-btn");
+                toc_article.setAttribute("style","display:none");
+                show_toc_btn.setAttribute("style","display:block");
+                };
+           </script>
+             
+        <!-- 目录内容结束 -->
+
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Synchronized总结
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2019/01/20/Synchronized总结/" class="article-date">
+  <time datetime="2019-01-19T16:00:00.000Z" itemprop="datePublished">2019-01-20</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/锁/">锁</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p>要理解Synchronized，首先要清楚偏向锁，轻量级锁和重量级锁，在使用方面需要有wait/wait(time)/notify/notifyAll等。</p>
+<a id="more"></a>
+
+<ul>
+<li><h2 id="Synchronized的升级过程"><a href="#Synchronized的升级过程" class="headerlink" title="Synchronized的升级过程"></a><strong>Synchronized的升级过程</strong></h2><p><strong>Synchronized的升级顺序是 无锁–&gt;偏向锁–&gt;轻量级锁–&gt;重量级锁，顺内不可逆，(Java SE 1.6中为了减少获得锁和释放锁带来的 性能消耗而引入的偏向锁和轻量级锁)</strong></p>
+<h3 id="偏向锁："><a href="#偏向锁：" class="headerlink" title="偏向锁："></a><strong>偏向锁：</strong></h3><p>当一个线程访问<strong>同步代码块</strong>并获取锁时，会在对象头和栈帧中的锁记录里存储锁偏向的线程ID，偏向锁是一个可重入的锁，以后该线程在进入和退出该同步代码块时不需要花费 CAS 操作来加锁和解锁，而只需简单的<strong>测试一下对象头的 Mark Word 里是否存储着指向当前线程的偏向锁(当前线程的线程ID)</strong>，如果测试成功，表示线程已经获得了锁，如果测试失败，则需要再测试下 Mark Word 中偏向锁的标识是否设置成 1（表示当前是偏向锁），如果偏向锁标识是1，<strong>则使用 CAS 进行锁获取</strong>，偏向锁标识不是1，则尝试使用 <strong>CAS 将对象头的偏向锁指向当前线程</strong>，上述两种CAS获取锁的操作，如果<strong>CAS操作成功则获取到了偏向锁</strong>，<strong>失败则代表出现了锁竞争，需要锁撤销操作</strong>。</p>
+<h3 id="锁撤销："><a href="#锁撤销：" class="headerlink" title="锁撤销："></a><strong>锁撤销：</strong></h3><p>偏向锁使用了一种等到<strong>竞争出现才释放锁</strong>的机制，所以当其他线程尝试竞争偏向锁时，持有偏向锁的线程才会释放锁。偏向锁的撤销需要<strong>等待拥有偏向锁的线程到达全局安全点</strong>（在这个时间点上没有字节码正在执行），会首先<strong>暂停拥有偏向锁的线程</strong>，然后检查持有偏向锁的线程是否活着，如果线程不处于活动状态，则将锁的对象的对象头设置成无锁状态，如果线程仍然活着，拥有偏向锁的栈会被执行<strong>(判断是否需要持有锁)</strong>，遍历偏向对象的锁记录，查看使用情况，如果还需要持有偏向锁，则偏向锁<strong>升级为轻量级锁</strong>，如果不需要持有偏向锁了，则将锁对象恢复成无锁状态，最后唤醒暂停的线程。</p>
+<h3 id="轻量级锁："><a href="#轻量级锁：" class="headerlink" title="轻量级锁："></a><strong>轻量级锁：</strong></h3><p>线程在执行同步块之前，JVM 会先在当前线程的栈桢中创建用于存储锁记录的空间，并将对象头中的 Mark Word 复制到锁记录中，官方称为 Displaced Mark Word。然后线程尝试使用 CAS 将对象头中的 Mark Word 替换为指向锁记录的指针。如果成功，当前线程获得锁，如果失败，表示其他线程竞争锁，当前线程便尝试使用<strong>自旋来获取锁</strong>，<strong>自旋有一定次数，如果超过设置自旋的次数则升级到重量级锁</strong>，<strong>或者一个线程在持有锁，一个在自旋，又有第三个来访时，轻量级锁升级为重量级锁，重量级锁使除了拥有锁的线程以外的线程都阻塞，防止CPU空转</strong>。</p>
+<h3 id="轻量级锁解锁："><a href="#轻量级锁解锁：" class="headerlink" title="轻量级锁解锁："></a><strong>轻量级锁解锁</strong>：</h3><p>轻量级解锁时，会使用原子的 CAS 操作来将 Displaced Mark Word 替换回到对象头，如果成功，则表示没有竞争发生。<strong>如果失败，表示当前锁存在竞争，锁就会膨胀成重量级锁</strong>。</p>
+<p><strong>例如：</strong>T1线程持有锁，T2线程自旋，但是T2线程自旋最大次数已经过了，则自旋失败，进行锁升级到重量级锁，T2线程阻塞，这时T1执行完了同步代码块，进行轻量级锁解锁，但是这时Mark Word中的标志位已经从原来的00(偏向锁)变成了10(中练级锁)，解锁会CAS失败，T1会进行解锁(释放监视器，释放锁)，并唤醒线程T2.</p>
+<h3 id="重量级锁："><a href="#重量级锁：" class="headerlink" title="重量级锁："></a><strong>重量级锁：</strong></h3><p>Synchronized是非公平锁,Synchronized在线程进入阻塞队列时，等待的线程会先尝试获取锁，如果获取不到就进入阻塞队列，这明显对于已经进入队列的线程是不公平的。</p>
+<h3 id="优缺点："><a href="#优缺点：" class="headerlink" title="优缺点："></a><strong>优缺点：</strong></h3><table>
+<thead>
+<tr>
+<th align="center">锁</th>
+<th align="center">优点</th>
+<th align="center">缺点</th>
+<th align="center">场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">偏向锁</td>
+<td align="center">加解锁不需要过多的资源消耗，和非同步方法的相比仅仅是<strong>纳秒</strong>的差距</td>
+<td align="center">如果存在所竞争，会有额外的锁撤销操作</td>
+<td align="center">适用于只有一个线程访问的场景</td>
+</tr>
+<tr>
+<td align="center">轻量级锁</td>
+<td align="center">竞争线程不会阻塞，会自旋，减少了上线文切换。</td>
+<td align="center">如果始终得不到锁，会消耗cpu资源</td>
+<td align="center">追求响应时间，同步代码块多为计算，执行快的场景</td>
+</tr>
+<tr>
+<td align="center">重量级锁</td>
+<td align="center">没啥优点</td>
+<td align="center">线程阻塞响应时间慢</td>
+<td align="center">同步代码块执行时间较长的场景使用</td>
+</tr>
+</tbody></table>
+<h3 id="流程图："><a href="#流程图：" class="headerlink" title="流程图："></a><strong>流程图：</strong></h3><p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/Synchronized%E5%8D%87%E7%BA%A7%E6%B5%81%E7%A8%8B%E5%9B%BE.png?raw=true" alt></p>
+</li>
+</ul>
+<ul>
+<li><h2 id="Synchronized-的使用"><a href="#Synchronized-的使用" class="headerlink" title="Synchronized 的使用"></a><strong>Synchronized 的使用</strong></h2><p><strong>1:</strong> <strong>Synchronized</strong> 是java的<strong>内置锁</strong>，也是<strong>排它锁</strong>和<strong>非公平锁</strong>，<strong>排它锁</strong>也就是当前线程获取锁后，其他线程都会阻塞挂起 ，<strong>非公平锁</strong>是在线程后去锁的时候会先尝试后去锁，获取不到在进行阻塞。</p>
+<p><strong>2:</strong> <strong>Synchronized</strong> 是如何保证 ‘原子性’ 的？是因为进入 Synchronized 块的内存语义是把 Synchronized 块内使用的 ‘工作内存清除’， 这样在使用共享变量时就会直接存主内存中获取并复制到工作你内存中，在退出 Synchronized 语句块时 会把 工作内存中计算过的 ‘共享变量’ 更新到主内存中。</p>
+<p><strong>3:</strong> 获取到 Synchronized 锁 ，<strong>都是 ‘对象锁’而非’代码块锁’ (锁的都是对象或类，而不是某个方法)</strong>，因此 Synchronized 是<strong>具有可重入性</strong>，在获取到该对象锁后可以不用再次获取该对象其他方法的锁，直接进入。</p>
+<p><strong>4:</strong> 如果是 <strong>Synchronized 用在 static 上</strong>， 就代表是<strong>类锁(.class)</strong>，<strong>无论创建多少个对象都不可行</strong>；</p>
+<h3 id="使用方法："><a href="#使用方法：" class="headerlink" title="使用方法："></a><strong>使用方法：</strong></h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 代码块 锁的是括号里的对象</span></span><br><span class="line">  Synchronized(需要锁的对象)&#123;</span><br><span class="line">  		<span class="comment">//临界区</span></span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 普通方法 锁的是当前对象</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Synchronized <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span></span>&#123;</span><br><span class="line">  		<span class="comment">//是临界区</span></span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 静态方法 锁的是当前的类(.class)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Synchronized <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span></span>&#123;</span><br><span class="line">  		<span class="comment">//临界区</span></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><h2 id="wait-notify-notifyAll-的使用"><a href="#wait-notify-notifyAll-的使用" class="headerlink" title="wait/notify/notifyAll 的使用"></a>wait/notify/notifyAll 的使用</h2><h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><p>wait和sleep区别在于<strong>wait会释放锁</strong>， 但是<strong>sleep不会释放锁</strong> ，sleep会导致线程阻塞挂起。</p>
+<p><strong>wait/wait(timeout)/notify/notifyAll</strong> 方法仅可以在<strong>获取到锁后</strong>才可以使用。</p>
+<h3 id="解释："><a href="#解释：" class="headerlink" title="解释："></a>解释：</h3><p><strong>wait：</strong> 线程等待。</p>
+<p><strong>wait(time)：</strong> 线程等待，如果时间超过了设置的time，则继续执行。</p>
+<p><strong>notify：</strong> <strong>随机唤醒一个</strong>等待的线程。</p>
+<p><strong>notifyAll：</strong> 唤醒全部等待线程。</p>
+<h3 id="代码演示："><a href="#代码演示：" class="headerlink" title="代码演示："></a>代码演示：</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@Auther</span>: concurrenncy</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: 2019-03-25 16:43</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@Company</span>: 随行付支付有限公司</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@maill</span>: lan_tao@suixingpay.com</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@Description</span>: wait 和 sleep 区别在于 wait会释放锁， 但是 sleep 不会 ，sleep会导致线程阻塞挂起</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WaitAndNotifyTest</span> </span>&#123;</span><br><span class="line">  </span><br><span class="line">      <span class="keyword">private</span> <span class="keyword">static</span> Object obj = <span class="keyword">new</span> Object();</span><br><span class="line">  </span><br><span class="line">      <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">          <span class="comment">// 创建线程 thread1</span></span><br><span class="line">          Thread thread1 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">              <span class="meta">@Override</span></span><br><span class="line">              <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                  <span class="keyword">try</span> &#123;</span><br><span class="line">                      System.out.println(Thread.currentThread().getName() + <span class="string">"   begin wait..."</span>);</span><br><span class="line">                      <span class="keyword">synchronized</span> (obj) &#123;</span><br><span class="line">                          obj.wait();</span><br><span class="line">                      &#125;</span><br><span class="line">                      System.out.println(Thread.currentThread().getName() + <span class="string">"   end wait..."</span>);</span><br><span class="line">                  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                      e.printStackTrace();</span><br><span class="line">                  &#125;</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;, <span class="string">"thread1"</span>);</span><br><span class="line">  </span><br><span class="line">          <span class="comment">// 创建线程 thread2</span></span><br><span class="line">          Thread thread2 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">              <span class="meta">@Override</span></span><br><span class="line">              <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                  <span class="keyword">try</span> &#123;</span><br><span class="line">                      System.out.println(Thread.currentThread().getName() + <span class="string">"   begin wait..."</span>);</span><br><span class="line">                      <span class="keyword">synchronized</span> (obj) &#123;</span><br><span class="line">                          obj.wait();</span><br><span class="line">                      &#125;</span><br><span class="line">                      System.out.println(Thread.currentThread().getName() + <span class="string">"   end wait..."</span>);</span><br><span class="line">                  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                      e.printStackTrace();</span><br><span class="line">                  &#125;</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;, <span class="string">"thread2"</span>);</span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">          <span class="comment">// 启动</span></span><br><span class="line">          thread1.start();</span><br><span class="line">          thread2.start();</span><br><span class="line">  </span><br><span class="line">          <span class="keyword">try</span> &#123;</span><br><span class="line">              <span class="comment">// 睡眠一秒</span></span><br><span class="line">              Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line">          &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">              e.printStackTrace();</span><br><span class="line">          &#125;</span><br><span class="line">          </span><br><span class="line">          <span class="comment">// 如果调用 notify 的线程未获取 对象锁，在调用 notify 的时候会抛出 java.lang.IllegalMonitorStateException 异常</span></span><br><span class="line">          <span class="keyword">synchronized</span> (obj) &#123;</span><br><span class="line">              <span class="comment">// 唤醒 使用 obj 调用 wait 方法的其中一个线程 (随机)</span></span><br><span class="line">              obj.notify();</span><br><span class="line">              <span class="comment">// 唤醒 使用呢 obj 调用 wait 方法的所有线程</span></span><br><span class="line">              obj.notifyAll();</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/01/20/Synchronized总结/" data-id="cjwsrsvia0002tox41ywnco0g" class="article-share-link">分享</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/synchronized使用/">synchronized使用</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/偏向锁-轻量级锁-重量级锁/">偏向锁/轻量级锁/重量级锁</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/2019/02/04/多线程的宏观和微观视角/" class="article-nav-link">
+        <strong class="article-nav-caption">前一篇</strong>
+        <div class="article-nav-title">
+          
+            多线程的宏观和微观视角
+          
+        </div>
+      </a>
+    
+    
+  </nav>
+
+
+  
+
+  
+    
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <ul align="center" class="list-inline">
+
+
+
+      
+
+      <li>&copy; 2019 lantao</li>
+      <li>Author:  <a href="https://lantaogithub.github.io/">兰涛</a></li>
+      <li>Email：lantao0518@sina.com </li>
+      
+<br>
+      <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>&nbsp&nbsp&nbsp
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+      <!--
+      <li><a href="/">兰涛</a></li>
+      -->
+    </ul>
+  </div>
+</footer>
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/favicon.ico" alt="lantao"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">主页</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">归档</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/categories">分类</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/tags">标签云</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">相册</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">关于</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        搜索
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+  <script src="/js/search.js"></script>
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>

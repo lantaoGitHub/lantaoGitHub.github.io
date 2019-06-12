@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="最怕一声碌碌无为，还说平凡难得可贵">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    多线程的宏观和微观视角 |
+    
+    lantao</title>
+  
+    <link rel="shortcut icon" href="/source">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-多线程的宏观和微观视角" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+
+<!-- 目录内容 -->
+        
+            
+            <p class="show-toc-btn" id="show-toc-btn" onclick="showToc();" style="display:none">
+            <span class="btn-bg"></span>
+            <span class="btn-text">文章导航</span>
+            </p>
+
+            <div id="toc-article" class="toc-article">
+                <span id="toc-close" class="toc-close" title="隐藏导航" onclick="showBtn();">×</span>
+                <strong class="toc-title">文章目录</strong>
+
+                <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#微观视角"><span class="toc-text">微观视角</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#宏观视角"><span class="toc-text">宏观视角</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#可见性：线程工作空间导致可见性问题"><span class="toc-text">可见性：线程工作空间导致可见性问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#原子性：线程切换导致原子性问题-count"><span class="toc-text">原子性：线程切换导致原子性问题 ++count</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#有序性：指令重排导致有序性问题；"><span class="toc-text">有序性：指令重排导致有序性问题；</span></a></li></ol></li></ol>
+           </div>
+
+           <script type="text/javascript">
+            function showToc(){
+                var toc_article = document.getElementById("toc-article");
+                var show_toc_btn = document.getElementById("show-toc-btn");
+                toc_article.setAttribute("style","display:block");
+                show_toc_btn.setAttribute("style","display:none");
+                };
+            function showBtn(){
+                var toc_article = document.getElementById("toc-article");
+                var show_toc_btn = document.getElementById("show-toc-btn");
+                toc_article.setAttribute("style","display:none");
+                show_toc_btn.setAttribute("style","display:block");
+                };
+           </script>
+             
+        <!-- 目录内容结束 -->
+
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      多线程的宏观和微观视角
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2019/02/04/多线程的宏观和微观视角/" class="article-date">
+  <time datetime="2019-02-03T16:00:00.000Z" itemprop="datePublished">2019-02-04</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/多线程/">多线程</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p>首先我们在做并发编程的的时候会考虑到原子性丶可见性和有序性，在宏观上会考虑到安全性丶活跃性和性能；</p>
+<a id="more"></a>
+
+<h2 id="微观视角"><a href="#微观视角" class="headerlink" title="微观视角"></a>微观视角</h2><ul>
+<li><strong>可见性</strong>: 
+一个线程对共享变量的修改，另外一个线程能够立刻感知到，我们称为可见性;</li>
+<li><strong>原子性</strong>： 
+一个或者多个操作在 CPU 执行的过程中不被中断的特性称为原子性；</li>
+<li><strong>有序性</strong>：
+就是我们代码的执行顺序，依赖等。(指令重排导致顺序被打乱);</li>
+</ul>
+<hr>
+<p>&#8195;&#8195;<strong>线程工作内存：</strong> 是指 Cpu 的 <strong>‘寄存器’</strong> 和 <strong>‘高速缓存’</strong>，线程的 工作内存/本地内存 是指cpu的寄存器和高速缓存的抽象描述,数据读取顺序优先级 是：<strong>寄存器－&gt;高速缓存－&gt;内存</strong></p>
+<hr>
+<h2 id="宏观视角"><a href="#宏观视角" class="headerlink" title="宏观视角"></a>宏观视角</h2><ul>
+<li><p><strong>安全性</strong>：
+安全性我认为其实是包含了原子性丶可见性和有序性的，是一个总的概念，在程序开发的时候首先要注重安全性，会在下面详细解释这三点；</p>
+</li>
+<li><p><strong>活跃性</strong><br>活跃性告诉我们的是要避免死锁，饥饿和活锁；</p>
+<p> <strong>— 死锁</strong>：这个都不陌生，线程A持有1锁，等待获取2锁，线程B持有2锁，等待获取1锁，这就是个典型的死锁，就就是阻塞了。</p>
+<p> <strong>— 饥饿</strong>：饥饿当多线程获取锁都得时候，总有线程没有机会获取到锁，出现饥饿的三中情况：<strong>1-高优先级的线程吞噬了低优先级线程的CPU使用权 2-线程被一直阻塞(比如Thread.Sleep) 3-等待线程永远不被唤醒</strong>，也可以理解为锁的优先级，我们常用的synchronized就是非公平锁，例如线程A，B,C按顺序获取锁1，首先是A获取到了锁，执行完临界区代码释放了锁，这是线程D来了直接获取到了锁，这就是非公平锁；ReentrantLock()默认是非公平锁，可以在ReentractLock（true）创建公平锁。</p>
+<p><strong>— 活锁</strong>：在生活中A和B同时进入左手门，为了不发生碰撞，A和B互相礼让同时进入了右手门，为了不发生碰撞又进入了左手们会一直循环下去，**实例代码找到适用的场景在增加。</p>
+</li>
+<li><p><strong>性能</strong><br>1：<strong>延迟:</strong> 延迟就是指一个请求调用到返回所使用的时间，时间越短，程序的处理的就越快，性能也就会高；<br>2：<strong>吞吐量:</strong> 吞吐量就是值在单位时间内(秒)处理的请求数量，吞吐量越大，程序处理的请求就越多，性能也越好；</p>
+</li>
+</ul>
+<hr>
+<h3 id="可见性：线程工作空间导致可见性问题"><a href="#可见性：线程工作空间导致可见性问题" class="headerlink" title="可见性：线程工作空间导致可见性问题"></a>可见性：<strong>线程工作空间导致可见性问题</strong></h3><p>&#8195;&#8195;例如：线程A在主存中年将变量age=0拉去到自己的工作内存中，然后做了age = 5，当然这个操作是在cpu的寄存器中进行的，然后写会高速缓存中，这时线程A的高速缓存还未执行同步主内存的操作，线程B又将age=0从主存拉取到了线程B的工作内存中，导致A线程已经更新但是B线程看不到的可见性问题；</p>
+<p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/%E5%85%B1%E4%BA%AB%E5%8F%98%E9%87%8F%E5%8F%AF%E8%A7%81%E6%80%A7.png?raw=true" alt="%E5%85%B1%E4%BA%AB%E5%8F%98%E9%87%8F%E5%8F%AF%E8%A7%81%E6%80%A7.png"></p>
+<h3 id="原子性：线程切换导致原子性问题-count"><a href="#原子性：线程切换导致原子性问题-count" class="headerlink" title="原子性：线程切换导致原子性问题 ++count"></a>原子性：<strong>线程切换导致原子性问题 ++count</strong></h3><p>&#8195;&#8195;例如：当线程A从<strong>主内存</strong>中将共享变量Count加载到线程A的<strong>工作内存</strong>后，发生了线程切换，这个时候线程B也将共享变量Count从<strong>主内存</strong>加载到了线程B的<strong>工作内存</strong>，这时<strong>线程A和B的工作内存中count都是0</strong>，线程B执行了Count = Count + 1,然后写回到<strong>主内存</strong>，这时候线程切换完成，回到了线程A再次执行 Count = Count + 1,再将线程A<strong>工作内存计算过</strong>的count写回主内存，现在我们得到的主内存呢中Count值是1而不是2。</p>
+<p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2%E5%AF%BC%E8%87%B4%E5%8E%9F%E5%AD%90%E6%80%A7%E9%97%AE%E9%A2%98++count%20.png?raw=true" alt="%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2%E5%AF%BC%E8%87%B4%E5%8E%9F%E5%AD%90%E6%80%A7%E9%97%AE%E9%A2%98%2B%2Bcount%20.png"></p>
+<h3 id="有序性：指令重排导致有序性问题；"><a href="#有序性：指令重排导致有序性问题；" class="headerlink" title="有序性：指令重排导致有序性问题；"></a>有序性：<strong>指令重排导致有序性问题；</strong></h3><p>在这里讲一个例子，就是获取单例双重检查锁(double-checked locking)判断：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Auther</span>: lantao</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: 2019-03-28 14:32</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Company</span>: 随行付支付有限公司</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@maill</span>: lan_tao@suixingpay.com</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: TODO</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test1</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> DoMain doMain;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> DoMain <span class="title">getDoMain</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(doMain == <span class="keyword">null</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>.getClass())&#123;</span><br><span class="line">                <span class="keyword">if</span>(doMain == <span class="keyword">null</span>)&#123;</span><br><span class="line">                    doMain = <span class="keyword">new</span> DoMain(<span class="string">""</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> doMain;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="keyword">return</span> doMain;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&#8195;&#8195;在上边的代码中在synchronized内和外都有一个if判断，判断doMain是否为null操作，有很多人对synchronized中的if null判断不理解，其实可以这样想，线程A和线程B都执行到了synchronized这里进行竞争锁，结果A得到锁，判断if null，结果还未实例化，继续进行实例化，然后return对象并释放锁，这时线程B获取到了锁进入if null判断，发现doMain已经被线程A实例化过了，直接返回实例即可，第二个if null的作用就在这里；</p>
+<p>看上去上边的代码是完美的，但是new的操作上我们理解是：</p>
+<ul>
+<li>创建内存M</li>
+<li>在内存M上初始化doMain对象</li>
+<li>将内存M的地址指向变量doMain</li>
+</ul>
+<p>但是实际上优化后(指令重排)的执行路径可能是这样的：</p>
+<ul>
+<li>创建内存M</li>
+<li>将内存M的地址指向变量doMain</li>
+<li>将内存M的地址指向变量doMain</li>
+</ul>
+<p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/%E6%9C%89%E5%BA%8F%E6%80%A7%E9%97%AE%E9%A2%98.png?raw=true" alt="%E6%9C%89%E5%BA%8F%E6%80%A7%E9%97%AE%E9%A2%98.png"></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/02/04/多线程的宏观和微观视角/" data-id="cjwsrsvic0004tox4sejjkjh5" class="article-share-link">分享</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/可见性-原子性-有序性/">可见性/原子性/有序性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/安全性-活跃性-性能/">安全性/活跃性/性能</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/2019/06/06/hello-world/" class="article-nav-link">
+        <strong class="article-nav-caption">前一篇</strong>
+        <div class="article-nav-title">
+          
+            Hello World
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2019/01/20/Synchronized总结/" class="article-nav-link">
+        <strong class="article-nav-caption">后一篇</strong>
+        <div class="article-nav-title">Synchronized总结</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <ul align="center" class="list-inline">
+
+
+
+      
+
+      <li>&copy; 2019 lantao</li>
+      <li>Author:  <a href="https://lantaogithub.github.io/">兰涛</a></li>
+      <li>Email：lantao0518@sina.com </li>
+      
+<br>
+      <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>&nbsp&nbsp&nbsp
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+      <!--
+      <li><a href="/">兰涛</a></li>
+      -->
+    </ul>
+  </div>
+</footer>
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/favicon.ico" alt="lantao"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">主页</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">归档</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/categories">分类</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/tags">标签云</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">相册</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">关于</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        搜索
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+  <script src="/js/search.js"></script>
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>
