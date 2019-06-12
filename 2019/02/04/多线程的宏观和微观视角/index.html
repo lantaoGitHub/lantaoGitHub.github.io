@@ -145,7 +145,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/02/04/多线程的宏观和微观视角/" data-id="cjwst15pr000275x4ij1ivatq" class="article-share-link">分享</a>
+      <a data-url="http://yoursite.com/2019/02/04/多线程的宏观和微观视角/" data-id="cjwsul1v60005n6x4yxqbgalj" class="article-share-link">分享</a>
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/可见性-原子性-有序性/">可见性/原子性/有序性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/安全性-活跃性-性能/">安全性/活跃性/性能</a></li></ul>
 
@@ -179,6 +179,26 @@
 
   
     
+  <div class="gitalk" id="gitalk-container"></div>
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'eacf3314ff57a55108e0',
+      clientSecret: '267e4903bc9a8d92733ee6f4800a522de70384e1',
+      repo: 'lantaoGitHub.github.io',
+      owner: 'lantaoGitHub',
+      admin: ['lantaoGitHub'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
   
 
 </article>
