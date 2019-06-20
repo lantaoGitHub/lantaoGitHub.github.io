@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="最怕一生碌碌无为，还说平凡难得可贵">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    Java内存模型 |
+    
+    lantao</title>
+  
+    <link rel="shortcut icon" href="/source">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-Jvm/Java内存模型" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+
+<!-- 目录内容 -->
+        
+            
+            <p class="show-toc-btn" id="show-toc-btn" onclick="showToc();" style="display:none">
+            <span class="btn-bg"></span>
+            <span class="btn-text">文章导航</span>
+            </p>
+
+            <div id="toc-article" class="toc-article">
+                <span id="toc-close" class="toc-close" title="隐藏导航" onclick="showBtn();">×</span>
+                <strong class="toc-title">文章目录</strong>
+
+                <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#volatile"><span class="toc-text">volatile</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#语义"><span class="toc-text">语义:</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#使用"><span class="toc-text">使用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#代码"><span class="toc-text">代码</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#synchroized"><span class="toc-text">synchroized</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#语义："><span class="toc-text">语义：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#使用-1"><span class="toc-text">使用:</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#代码："><span class="toc-text">代码：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#可见性·原子性和有序性"><span class="toc-text">可见性·原子性和有序性</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#语义-1"><span class="toc-text">语义</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#java内存模型"><span class="toc-text">java内存模型</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#运行时数据区域"><span class="toc-text">运行时数据区域</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#虚拟机栈"><span class="toc-text">虚拟机栈</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#本地方法栈"><span class="toc-text">本地方法栈</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#程序计数器"><span class="toc-text">程序计数器</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Java堆"><span class="toc-text">Java堆</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#方法区"><span class="toc-text">方法区</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#常量池-存在于方法区中"><span class="toc-text">常量池 存在于方法区中</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#java内存模型的8个操作"><span class="toc-text">java内存模型的8个操作</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#java内存模型操作的规则"><span class="toc-text">java内存模型操作的规则</span></a></li></ol></li></ol>
+           </div>
+
+           <script type="text/javascript">
+            function showToc(){
+                var toc_article = document.getElementById("toc-article");
+                var show_toc_btn = document.getElementById("show-toc-btn");
+                toc_article.setAttribute("style","display:block");
+                show_toc_btn.setAttribute("style","display:none");
+                };
+            function showBtn(){
+                var toc_article = document.getElementById("toc-article");
+                var show_toc_btn = document.getElementById("show-toc-btn");
+                toc_article.setAttribute("style","display:none");
+                show_toc_btn.setAttribute("style","display:block");
+                };
+           </script>
+             
+        <!-- 目录内容结束 -->
+
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Java内存模型
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2019/03/14/Jvm/Java内存模型/" class="article-date">
+  <time datetime="2019-03-13T16:00:00.000Z" itemprop="datePublished">2019-03-14</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/内存模型/">内存模型</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p>本文简单介绍了Java内存模型丶Volatile和Synchronized的语义</p>
+<a id="more"></a>
+
+<h3 id="volatile"><a href="#volatile" class="headerlink" title="volatile"></a>volatile</h3><ul>
+<li><h4 id="语义"><a href="#语义" class="headerlink" title="语义:"></a><strong>语义:</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; volatile具有和synchronized的一样的语义,被volatile修饰的变量在 ‘读’ 时JMM会将该线程所对应的’本地内存’置为失效，线程接下来会从 <strong>‘主内存’</strong> 中直接获取，在 ‘写’ volatile 修饰的变量时JMM会将该线程对应的本地内存的共享变量直接写入到 <strong>‘主内存’</strong> 中。</p>
+</li>
+<li><h4 id="使用"><a href="#使用" class="headerlink" title="使用"></a><strong>使用</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; 被volatile修饰的变量将会 <strong>‘禁用缓存’</strong> , 并且禁止 <strong>‘指令重排’</strong>（指令重排分为虚拟机重排和处理器重排）<br>&nbsp; &nbsp; &nbsp; &nbsp; <strong>volatile</strong> 声明这个字段易变（可能被多个线程使用），Java内存模型负责各个线程的工作区与主存区的该字段的值保持同步，即一致性。<br>&nbsp; &nbsp; &nbsp; &nbsp; <strong>static</strong> 声明这个字段是静态的（可能被多个实例共享），在主存区上该类的所有实例的该字段为同一个变量，即唯一性。</p>
+</li>
+<li><h4 id="代码"><a href="#代码" class="headerlink" title="代码"></a><strong>代码</strong></h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> String a;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="synchroized"><a href="#synchroized" class="headerlink" title="synchroized"></a>synchroized</h3><ul>
+<li><h4 id="语义："><a href="#语义：" class="headerlink" title="语义："></a><strong>语义：</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; 在进入synchronized修饰的方法或代码块时会进行lock操作，<strong>并且JMM会将线程本地内存清空,临界区内使用共享变量将从’主内存’中同步</strong>,在出synchronized修饰的方法或代码块时会进行unlock操作，<strong>并且JMM会将线程的本地内存的共享变量刷新到主内存中。</strong><br>&nbsp; </p>
+</li>
+<li><h4 id="使用-1"><a href="#使用-1" class="headerlink" title="使用:"></a><strong>使用:</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; synchronized是java内置锁,可以放在 <strong>‘普通方法’ ‘静态方法’ 和 ‘代码块’</strong> 上,如果是放在普通方法上则代表着 <strong>‘锁的是当前对象’</strong>,放在静态方法上 <strong>‘锁的是类(.class)’</strong> ,如果是synchronized代码块写法则是synchronized(‘需要锁的对象或者是类’){‘临界区’}。<br><strong>注：synchronized锁的是一个对象而不是某个方法</strong><br>&nbsp; </p>
+</li>
+<li><h4 id="代码："><a href="#代码：" class="headerlink" title="代码："></a><strong>代码：</strong></h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//锁的是当前对象</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//锁的是类(.class)</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">test1</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//这里锁的是this 也就是当前对象</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test3</span><span class="params">()</span></span>&#123;</span><br><span class="line">      <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">      <span class="comment">// 这里代表临界区</span></span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="可见性·原子性和有序性"><a href="#可见性·原子性和有序性" class="headerlink" title="可见性·原子性和有序性"></a>可见性·原子性和有序性</h3><ul>
+<li><h4 id="语义-1"><a href="#语义-1" class="headerlink" title="语义"></a><strong>语义</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; <strong>可见性</strong> 就是指线程A在修改共享变量后线程B你能立马看的到，称之为可见性。<br>&nbsp; &nbsp; &nbsp; &nbsp; <strong>原子性</strong> 就是指一个操作或一组操作不可中断，要么全部执行，要么全都不执行，称之为原子性。（操作的中间状态对外不可见）<br>&nbsp; &nbsp; &nbsp; &nbsp; <strong>有序性</strong> 就是指程序按照我们的代码顺序进行执行，称之为有序性(程序员以为是按照我们的代码顺序执行的，其实经过了虚拟机和处理器指令重排后的顺序执行的)。</p>
+</li>
+</ul>
+<h3 id="java内存模型"><a href="#java内存模型" class="headerlink" title="java内存模型"></a>java内存模型</h3><ul>
+<li><h4 id="运行时数据区域"><a href="#运行时数据区域" class="headerlink" title="运行时数据区域"></a><strong>运行时数据区域</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; java虚拟机所管理的内存将会包括以下几个运行时数据区域，如下图：<br>&nbsp;<br><img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/jvm%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA.png" alt="java内存模型.png"><br>&nbsp; </p>
+</li>
+<li><h4 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a><strong>虚拟机栈</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp;虚拟机栈是线程私有的，也可以称之为线程栈，虚拟机栈所描述的就是java执行方法的一个简易版内存模型，每个方法在执行时都会创建 <strong>‘栈帧’</strong> 用于存存储:<br><strong>局部变量表：存放方法参数和方法内部定义的局部变量</strong><br><strong>操作数栈： 其实就是在执行每一行命令，操作记录</strong><br><strong>动态链接:指向运行时常量池的引用,因为在方法执行的过程中有可能需要用到类中的常量</strong><br><strong>方法出口:方法返回地址当一个方法执行完毕之后，要返回之前调用它的地方，因此在栈帧中必须保存一个方法返回地址’</strong> 等信息’<br><strong>局部变量表</strong>：存储各种基本数据类型，包括 <strong>byte,short,int,long,float,dubbo,char,boolean</strong> 和 对象引用(<strong>引用类型不是对象本身，是一个指向对象的一个地址</strong>)
+&nbsp; </p>
+</li>
+<li><h4 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a><strong>本地方法栈</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp;本地方法栈和虚拟机栈是一样的，区别就是<strong>虚拟机栈是为java方法(也就是字节码)服务的，本地方法栈是为虚拟机使用到的Native服务的。(可以理解为是操作系统的方法)</strong><br>&nbsp; </p>
+</li>
+<li><h4 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a><strong>程序计数器</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp;程序计数器也是线程私有的，大白话意思就是存储线程的执行地址，因为java多线程是通过Cpu时间片轮询方式执行的，比如线程A执行到一半，Cpu时间片使用完了，这时线程A就会在自己的程序计数器中<strong>存储执行地址保证下次从这里开始继续执行</strong>，然后线程B开始执行。<br>&nbsp; </p>
+</li>
+<li><h4 id="Java堆"><a href="#Java堆" class="headerlink" title="Java堆"></a><strong>Java堆</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; java堆就是存储所有对象的实例,数组(数组引用是存放在Java栈中的)和常量池，也是最大的一块内存，-xms 初始堆大小 和-xmx最大堆大小<br>&nbsp;</p>
+</li>
+<li><h4 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a><strong>方法区</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; 方法区也是线程共享的区域，存储已经被虚拟机加载的<strong>类信息（包括类的名称、方法信息、字段信息），常量和静态变量</strong>，(在1.8之前也叫用永久代，之后称之为元空间,使用的是本地内存)<br>&nbsp;</p>
+</li>
+<li><h4 id="常量池-存在于方法区中"><a href="#常量池-存在于方法区中" class="headerlink" title="常量池 存在于方法区中"></a><strong>常量池 存在于方法区中</strong></h4><p>&nbsp; &nbsp; &nbsp; &nbsp; 常量池 (jdk1.7 后常量池移到堆中)也可以说是String常量池，因为String是final修饰的，是常量且不可变。</p>
+<p><strong>代码：</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以下代码JMM就会在常量池中查找"lantao"是否存在，如果存在则将地址赋值给a，如果不存在则先创建一个存储在常量池中然后将地址赋值给a；</span></span><br><span class="line">        String a = <span class="string">"lantao"</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 以下代码会创建你String对象，区别就是 </span></span><br><span class="line"><span class="comment">//1-创建String对象；</span></span><br><span class="line"><span class="comment">//2-在常量池中查；找"lantao"，如果存在则赋值给1，如果不存在则在常量池中创建'lantao'再将地址赋值给1；</span></span><br><span class="line"><span class="comment">//3：String对象将地址赋值个变量b；</span></span><br><span class="line">        String b = <span class="keyword">new</span> String(<span class="string">"lantao"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 所以  这里是 false ，因为地址不一样，</span></span><br><span class="line"><span class="comment">// b的地址指向的是 heap 中的String，String对象在只指向常量池中的'lantao'</span></span><br><span class="line"><span class="comment">// a的地址是直接指向 常量池中的'lanntao'</span></span><br><span class="line">        System.out.println(a == b); <span class="comment">//false</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>图片：</strong></p>
+<p><img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/%E5%B8%B8%E9%87%8F%E6%B1%A01.png" alt></p>
+</li>
+</ul>
+<ul>
+<li><h4 id="java内存模型的8个操作"><a href="#java内存模型的8个操作" class="headerlink" title="java内存模型的8个操作"></a><strong>java内存模型的8个操作</strong></h4><p>1–lock(加锁)：用在主内存变量上，标记这个变量是一个线程独占状态，其他线程不可锁定；<br>2–unlock(解锁)：用在主内存变量上，对已经加锁的变量进行解锁，释放锁后其他线程可进行对该变量的加锁；<br>3–read(读取):用在主内存上，将主内存中的变量读取到线程本地内存中，以便后续的load操作；<br>4–load(载入)：用在线程的本地内存上，将read读取到本地内存的变量载入到本地内存的变量副本中(这里个人理解是载入到虚拟机栈(线程栈)的栈帧中的局部变量表中)<br>5–use(使用)：用在线程本地内存上，把本地内存的变量给执行引擎，每当需要使用这个变量的值字节码指令会执行这个操作(大白话就是使用变量);<br>6–assign(赋值)：用在线程本地内存上，把执行引擎获取到的值赋值本地内存的变量，每当需要使用这个变量的值字节码指令会执行这个操作(大白话就是给变量赋值)<br>7–store(存储)：用在本地内存上，将本地你内存中的变量的值存储到主内存中；<br>8–write(写入)：用在主内存上，把store操作从本年内存获取的值放入到主内存的变量中；<br>&nbsp;</p>
+</li>
+<li><h4 id="java内存模型操作的规则"><a href="#java内存模型操作的规则" class="headerlink" title="java内存模型操作的规则"></a><strong>java内存模型操作的规则</strong></h4><p>1–不允许<strong>read和load,store和write</strong>单独使用，需要组合使用;<br>2–不允许线程丢弃它assign过的变量，意思就是只要是变量在本地内存中变更了，就一定要同步到主线程中；<br>3–不允许线程在没有assign过变量，就将变量同步到主内存中，意思就是不允许线程在没有改变过变量的前提下，将变量store write到主内存中；<br>4–一个新的变量只能在主内存中诞生，意思就是在使用变量必须是从主内存read load下来的;(原文意思：对一个变量实施use，store之前，必须要执行过assign和load)<br>5–一个变量同一时间只可以让一个线程lock，并切可以让这个线程lock多次，但也需要unlock多次才可以解锁；<br>6–一个变量被线程lock时，线程的本地内存将会被清空，在使用变量的时候需要进行load或assign操作来初始化；<br>7–变量在为为lock的时候，不可以unlock，当然，也不可以unlock别的线程lock的变量；<br>8–对一个变量unlock之前，需要将assign过的变量都store，write到主内存中；</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/03/14/Jvm/Java内存模型/" data-id="cjx42w1il0003ykx4dlehczft" class="article-share-link">分享</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/内存模型/">内存模型</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/2019/03/16/Spring源码系列/Spring源码之注解扫描Component-scan/" class="article-nav-link">
+        <strong class="article-nav-caption">前一篇</strong>
+        <div class="article-nav-title">
+          
+            Spring源码之注解扫描Component-scan
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2019/03/01/Spring源码系列/Srping源码之BeanFactory.getBean/" class="article-nav-link">
+        <strong class="article-nav-caption">后一篇</strong>
+        <div class="article-nav-title">Srping源码之BeanFactory.getBean</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'eacf3314ff57a55108e0',
+      clientSecret: '267e4903bc9a8d92733ee6f4800a522de70384e1',
+      repo: 'lantaoGitHub.github.io',
+      owner: 'lantaoGitHub',
+      admin: ['lantaoGitHub'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <ul align="center" class="list-inline">
+
+
+
+      
+
+      <li>&copy; 2019 lantao</li>
+      <li>Author:  <a href="https://lantaogithub.github.io/">兰涛</a></li>
+      <li>Email：lantao0518@sina.com </li>
+      
+<br>
+      <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+ 
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>&nbsp&nbsp&nbsp
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+      <!--
+      <li><a href="/">兰涛</a></li>
+      -->
+    </ul>
+
+
+
+
+
+
+
+  </div>
+
+ 
+
+</footer>
+
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/favicon.ico" alt="lantao"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">主页</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">归档</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/categories">分类</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/tags">标签云</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">相册</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">关于</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        搜索
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+  <script src="/js/search.js"></script>
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>

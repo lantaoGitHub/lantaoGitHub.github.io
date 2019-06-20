@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="最怕一生碌碌无为，还说平凡难得可贵">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    Spring源码之注解扫描Component-scan |
+    
+    lantao</title>
+  
+    <link rel="shortcut icon" href="/source">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-Spring源码系列/Spring源码之注解扫描Component-scan" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+
+<!-- 目录内容 -->
+        
+            
+            <p class="show-toc-btn" id="show-toc-btn" onclick="showToc();" style="display:none">
+            <span class="btn-bg"></span>
+            <span class="btn-text">文章导航</span>
+            </p>
+
+            <div id="toc-article" class="toc-article">
+                <span id="toc-close" class="toc-close" title="隐藏导航" onclick="showBtn();">×</span>
+                <strong class="toc-title">文章目录</strong>
+
+                
+           </div>
+
+           <script type="text/javascript">
+            function showToc(){
+                var toc_article = document.getElementById("toc-article");
+                var show_toc_btn = document.getElementById("show-toc-btn");
+                toc_article.setAttribute("style","display:block");
+                show_toc_btn.setAttribute("style","display:none");
+                };
+            function showBtn(){
+                var toc_article = document.getElementById("toc-article");
+                var show_toc_btn = document.getElementById("show-toc-btn");
+                toc_article.setAttribute("style","display:none");
+                show_toc_btn.setAttribute("style","display:block");
+                };
+           </script>
+             
+        <!-- 目录内容结束 -->
+
+
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Spring源码之注解扫描Component-scan
+    </h1>
+  
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2019/03/16/Spring源码系列/Spring源码之注解扫描Component-scan/" class="article-date">
+  <time datetime="2019-03-15T16:00:00.000Z" itemprop="datePublished">2019-03-16</time>
+</a>
+        
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/spring源码/">spring源码</a>
+  </div>
+
+      </div>
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+      
+
+      
+        <p>本文主要介绍Spring的component-scan标签，了解spring是如果实现扫描注解进行bean的注册，主要实现实在 NamespaceHandler, NamespaceHandlerSupport 和 BeanDefinitionParser 三个接口中，还需要配置</p>
+<a id="more"></a>
+
+<p>spring.handlers文件，在接下里的源码解析中会详细解析，在本篇博客中将使用ApplicationConntext作为起点，直接从差异开始讲解，如果想了解ApplicationContext 源码的全流程请看上篇博客。</p>
+<blockquote>
+<p>GItHub:<a href="https://github.com/lantaoGitHub/spring-framework.git" target="_blank" rel="noopener">https://github.com/lantaoGitHub/spring-framework.git</a></p>
+</blockquote>
+<blockquote>
+<p><strong>这里解析解释一下他们之间的关系：</strong></p>
+<p><strong>NamespaceHandlerSupport  是 Abstract 修饰的抽象类 并 实现 NamespaceHandler 接口，继而实现了 NamespaceHandler接口的parser和docreate方法，自定的NamespaceHandler需要继承NamespaceHandlerSupport类并需要实现NamespaceHandler接口的init方法，init方法需要做解析类的注册操作，代码如下：</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">&gt; <span class="keyword">package</span> org.springframework.context.config;</span><br><span class="line">&gt; </span><br><span class="line">&gt; <span class="keyword">import</span> org.springframework.beans.factory.xml.NamespaceHandlerSupport;</span><br><span class="line">&gt; <span class="keyword">import</span> org.springframework.context.annotation.AnnotationConfigBeanDefinitionParser;</span><br><span class="line">&gt; <span class="keyword">import</span> org.springframework.context.annotation.ComponentScanBeanDefinitionParser;</span><br><span class="line">&gt; </span><br><span class="line">&gt; <span class="comment">/**</span></span><br><span class="line"><span class="comment">&gt;  * &#123;<span class="doctag">@link</span> org.springframework.beans.factory.xml.NamespaceHandler&#125;</span></span><br><span class="line"><span class="comment">&gt;  * for the '&#123;<span class="doctag">@code</span> context&#125;' namespace.</span></span><br><span class="line"><span class="comment">&gt;  *</span></span><br><span class="line"><span class="comment">&gt;  * <span class="doctag">@author</span> Mark Fisher</span></span><br><span class="line"><span class="comment">&gt;  * <span class="doctag">@author</span> Juergen Hoeller</span></span><br><span class="line"><span class="comment">&gt;  * <span class="doctag">@since</span> 2.5</span></span><br><span class="line"><span class="comment">&gt;  */</span></span><br><span class="line">&gt; <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ContextNamespaceHandler</span> <span class="keyword">extends</span> <span class="title">NamespaceHandlerSupport</span> </span>&#123;</span><br><span class="line">&gt; </span><br><span class="line">&gt; 	<span class="meta">@Override</span></span><br><span class="line">&gt; 	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">&gt; 		registerBeanDefinitionParser(<span class="string">"property-placeholder"</span>, <span class="keyword">new</span> PropertyPlaceholderBeanDefinitionParser());</span><br><span class="line">&gt; 		registerBeanDefinitionParser(<span class="string">"property-override"</span>, <span class="keyword">new</span> PropertyOverrideBeanDefinitionParser());</span><br><span class="line">&gt; 		registerBeanDefinitionParser(<span class="string">"annotation-config"</span>, <span class="keyword">new</span> AnnotationConfigBeanDefinitionParser());</span><br><span class="line">&gt; 		registerBeanDefinitionParser(<span class="string">"component-scan"</span>, <span class="keyword">new</span> ComponentScanBeanDefinitionParser());</span><br><span class="line">&gt; 		registerBeanDefinitionParser(<span class="string">"load-time-weaver"</span>, <span class="keyword">new</span> LoadTimeWeaverBeanDefinitionParser());</span><br><span class="line">&gt; 		registerBeanDefinitionParser(<span class="string">"spring-configured"</span>, <span class="keyword">new</span> SpringConfiguredBeanDefinitionParser());</span><br><span class="line">&gt; 		registerBeanDefinitionParser(<span class="string">"mbean-export"</span>, <span class="keyword">new</span> MBeanExportBeanDefinitionParser());</span><br><span class="line">&gt; 		registerBeanDefinitionParser(<span class="string">"mbean-server"</span>, <span class="keyword">new</span> MBeanServerBeanDefinitionParser());</span><br><span class="line">&gt; 	&#125;</span><br><span class="line">&gt; </span><br><span class="line">&gt; &#125;</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&gt; 	<span class="comment">/**</span></span><br><span class="line"><span class="comment">&gt; 	 * Subclasses can call this to register the supplied &#123;<span class="doctag">@link</span> BeanDefinitionParser&#125; to</span></span><br><span class="line"><span class="comment">&gt; 	 * handle the specified element. The element name is the local (non-namespace qualified)</span></span><br><span class="line"><span class="comment">&gt; 	 * name.</span></span><br><span class="line"><span class="comment">&gt; 	 */</span></span><br><span class="line">&gt; 	<span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">registerBeanDefinitionParser</span><span class="params">(String elementName, BeanDefinitionParser parser)</span> </span>&#123;</span><br><span class="line">&gt; 		<span class="keyword">this</span>.parsers.put(elementName, parser);</span><br><span class="line">&gt; 	&#125;</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<blockquote>
+<p><strong>BeanDefinitionParser类是解析类的顶层接口，自定义的解析类需要实现BeanDefinitionParser类的Parser方法，解析类的注册就在NameSpaceHandler的init方法中年进行；</strong></p>
+</blockquote>
+<ul>
+<li>还是先看一下测试类：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> lantao.scan;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.context.ApplicationContext;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.support.ClassPathXmlApplicationContext;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScanTest</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		ApplicationContext applicationContext = <span class="keyword">new</span> ClassPathXmlApplicationContext(<span class="string">"spring-bean-scan.xml"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>xml文件中use-default-filters 属性的默认值为 true，即使用默认的 Filter 进行包扫描，而默认的 Filter 对标有 @Service,@Controller，@Component和@Repository 的注解的类进行扫描 ,如果定位为false的话，就需要进行自定义include-filter。</strong></p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=<span class="string">"1.0"</span> encoding=<span class="string">"UTF-8"</span> ?&gt;</span><br><span class="line">&lt;beans</span><br><span class="line">       xmlns=<span class="string">"http://www.springframework.org/schema/beans"</span></span><br><span class="line">       xmlns:xsi=<span class="string">"http://www.w3.org/2001/XMLSchema-instance"</span></span><br><span class="line">	   xmlns:context=<span class="string">"http://www.springframework.org/schema/context"</span></span><br><span class="line">	   xsi:schemaLocation=<span class="string">"http://www.springframework.org/schema/beans</span></span><br><span class="line"><span class="string">	   http://www.springframework.org/schema/beans/spring-beans.xsd</span></span><br><span class="line"><span class="string">	   http://www.springframework.org/schema/context</span></span><br><span class="line"><span class="string">	   http://www.springframework.org/schema/context/spring-context.xsd"</span>&gt;</span><br><span class="line"></span><br><span class="line">	&lt;!-- use-<span class="keyword">default</span>-filters 属性的默认值为 <span class="keyword">true</span>，即使用默认的 Filter 进行包扫描，而默认的 Filter 对标有 <span class="meta">@Service</span>,<span class="meta">@Controller</span>和<span class="meta">@Repository</span> 的注解的类进行扫描 --&gt;</span><br><span class="line">	&lt;context:component-scan base-<span class="keyword">package</span>=<span class="string">"lantao.scan"</span> use-<span class="keyword">default</span>-filters=<span class="string">"false"</span>&gt;</span><br><span class="line">		&lt;!-- 只扫描 base-<span class="keyword">package</span> 的 controller 注解 还有对应的 exclude-filter 标签 排除 ； use-<span class="keyword">default</span>-filters=<span class="string">"false"</span> 和 include-filter 一起使用 和 exclude-filter一起回抛异常--&gt;</span><br><span class="line">		&lt;context:include-filter type=<span class="string">"annotation"</span> expression=<span class="string">"org.springframework.stereotype.Controller"</span>/&gt;</span><br><span class="line">		&lt;context:include-filter type=<span class="string">"annotation"</span> expression=<span class="string">"org.springframework.stereotype.Component"</span>/&gt;</span><br><span class="line">		&lt;context:include-filter type=<span class="string">"annotation"</span> expression=<span class="string">"org.springframework.stereotype.Service"</span>/&gt;</span><br><span class="line">		&lt;context:include-filter type=<span class="string">"annotation"</span> expression=<span class="string">"org.springframework.stereotype.Repository"</span>/&gt;</span><br><span class="line">	&lt;/context:component-scan&gt;</span><br><span class="line"></span><br><span class="line">&lt;/beans&gt;</span><br></pre></td></tr></table></figure>
+
+<p>因为这里使用<a href="https://blog.csdn.net/qq_30257149/article/details/88224879" target="_blank" rel="noopener">ApplicationContext，ApplicationContext</a>在上篇文章已经进行了源码解读，接下来我们直接看<strong>差异点。</strong></p>
+<ul>
+<li>差异代码在DefaultBeanDefinitionDocumentReader类中的parseBeanDefinitions方法中：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Parse the elements at the root level in the document:</span></span><br><span class="line"><span class="comment"> * "import", "alias", "bean".</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> root the DOM root element of the document</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">parseBeanDefinitions</span><span class="params">(Element root, BeanDefinitionParserDelegate delegate)</span> </span>&#123;</span><br><span class="line">	<span class="comment">//验证xml namespace, BeanDefinitionParserDelegate.BEANS_NAMESPACE_URI</span></span><br><span class="line">	<span class="keyword">if</span> (delegate.isDefaultNamespace(root)) &#123;</span><br><span class="line">		NodeList nl = root.getChildNodes();</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nl.getLength(); i++) &#123;</span><br><span class="line">			Node node = nl.item(i);</span><br><span class="line">			<span class="keyword">if</span> (node <span class="keyword">instanceof</span> Element) &#123;</span><br><span class="line">				Element ele = (Element) node;</span><br><span class="line">				<span class="keyword">if</span> (delegate.isDefaultNamespace(ele)) &#123;</span><br><span class="line">					<span class="comment">//对默认标签处理</span></span><br><span class="line">					<span class="comment">// 这里只处理 nade namespace 为 http://www.springframework.org/schema/beans 的标签</span></span><br><span class="line">					parseDefaultElement(ele, delegate);</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">else</span> &#123;</span><br><span class="line">					<span class="comment">//对自定义标签处理 会解析 &lt;context:component-scan base-package="lantao.scan"/&gt; 或者自定义 dubbo</span></span><br><span class="line">					delegate.parseCustomElement(ele);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">//对自定义标签处理</span></span><br><span class="line">		delegate.parseCustomElement(root);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>主要差异就在</strong> <strong>parseDefaultElement(ele, delegate) 和 delegate.parseCustomElement(ele) 方法上，parseDefaultElement方法仅仅会处理node的namespace是：</strong><a href="http://www.springframework.org/schema/beans" target="_blank" rel="noopener">http://www.springframework.org/schema/beans</a> 的标签，<strong>其他标签</strong>和 <strong>自定义标签</strong>全部都是通过这个方法来解析的；</p>
+<ul>
+<li><strong>delegate.parseCustomElement源码：</strong></li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> BeanDefinition <span class="title">parseCustomElement</span><span class="params">(Element ele)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> parseCustomElement(ele, <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> BeanDefinition <span class="title">parseCustomElement</span><span class="params">(Element ele, @Nullable BeanDefinition containingBd)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 获取node的 NameSpaceURI</span></span><br><span class="line">	String namespaceUri = getNamespaceURI(ele);</span><br><span class="line">	<span class="keyword">if</span> (namespaceUri == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 解析自定义标签 需要在 Meta-inf 文件加 增加 spring.handlers 文件 例如：http\://www.springframework.org/schema/context=org.springframework.context.config.ContextNamespaceHandler</span></span><br><span class="line">	<span class="comment">// 根据指定的 NameSpaceURI 获取 NamespaceHandler  handler可以参考spring.handlers文件</span></span><br><span class="line">	<span class="comment">// abstract NamespaceHandlerSupport 实现了 NamespaceHandler 接口，继而实现了 NamespaceHandler 的两个个方法（parser，docreate），自定义handler 需要实现 NamespaceHandlerSupport 类</span></span><br><span class="line">	<span class="comment">// 进行 NamespaceHandler 类的 init 方法的 实现， 主要是做注册 BeanDefinitionParser（ registerBeanDefinitionParser ） ， 需要自定义解析类 继承 BeanDefinitionParser 类</span></span><br><span class="line">	NamespaceHandler handler = <span class="keyword">this</span>.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);</span><br><span class="line">	<span class="keyword">if</span> (handler == <span class="keyword">null</span>) &#123;</span><br><span class="line">		error(<span class="string">"Unable to locate Spring NamespaceHandler for XML schema namespace ["</span> + namespaceUri + <span class="string">"]"</span>, ele);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 解析操作</span></span><br><span class="line">	<span class="keyword">return</span> handler.parse(ele, <span class="keyword">new</span> ParserContext(<span class="keyword">this</span>.readerContext, <span class="keyword">this</span>, containingBd));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里代码很简单，只做了一下三件事情：</p>
+<p>1：获取Element的NamespaceUri；</p>
+<p>2：通过命名空间处理解析器(NamespaceHandlerResolver)的resolver方法进行NameSpaceHandler的处理；</p>
+<p>3：通过NameSpaceHandler的Parse方法进行标签解析；</p>
+<ul>
+<li>我们直接看 resolve方法：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Locate the &#123;<span class="doctag">@link</span> NamespaceHandler&#125; for the supplied namespace URI</span></span><br><span class="line"><span class="comment"> * from the configured mappings.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> namespaceUri the relevant namespace URI</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> the located &#123;<span class="doctag">@link</span> NamespaceHandler&#125;, or &#123;<span class="doctag">@code</span> null&#125; if none found</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> NamespaceHandler <span class="title">resolve</span><span class="params">(String namespaceUri)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 这里获取的是所有注册到 handlerMappings 中的  NamespaceHandler ， </span></span><br><span class="line">	<span class="comment">// 就是 resource/META-INF/spring.handler 中的类  key就是namespaceUri ，</span></span><br><span class="line">	<span class="comment">// 这些类都继承了 NamespaceHandlerSupport 实现了init方法 在init方法中进行 BeanDefinitionParse 的注册	Map&lt;String, Object&gt; handlerMappings = getHandlerMappings();</span></span><br><span class="line">	<span class="comment">// 通过 namespaceUri 在 handlerMappings 中获取对应的处理器或者 className 如果是初始化过的就直接返回，反之进行类初始化工作</span></span><br><span class="line">	Object handlerOrClassName = handlerMappings.get(namespaceUri);</span><br><span class="line">	<span class="keyword">if</span> (handlerOrClassName == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (handlerOrClassName <span class="keyword">instanceof</span> NamespaceHandler) &#123;</span><br><span class="line">		<span class="keyword">return</span> (NamespaceHandler) handlerOrClassName;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		String className = (String) handlerOrClassName;</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="comment">// 实例化</span></span><br><span class="line">			Class&lt;?&gt; handlerClass = ClassUtils.forName(className, <span class="keyword">this</span>.classLoader);</span><br><span class="line">			<span class="comment">// 判断实例化的类的超类或者超级接口 是否是 NamespaceHandler</span></span><br><span class="line">			<span class="keyword">if</span> (!NamespaceHandler.class.isAssignableFrom(handlerClass)) &#123;</span><br><span class="line">					<span class="keyword">throw</span> <span class="keyword">new</span> FatalBeanException(<span class="string">"Class ["</span> + className + <span class="string">"] for namespace ["</span> + namespaceUri +</span><br><span class="line">						<span class="string">"] does not implement the ["</span> + NamespaceHandler.class.getName() + <span class="string">"] interface"</span>);</span><br><span class="line">			&#125;</span><br><span class="line">			NamespaceHandler namespaceHandler = (NamespaceHandler) BeanUtils.instantiateClass(handlerClass);</span><br><span class="line">			<span class="comment">// 注册 自定义标签所对应的 解析策略类  解析策略类都继承了 BeanDefinitionParser ，比如 ComponentScanBeanDefinitionParser</span></span><br><span class="line">			namespaceHandler.init();</span><br><span class="line">			<span class="comment">// 放入缓存中</span></span><br><span class="line">			handlerMappings.put(namespaceUri, namespaceHandler);</span><br><span class="line">			<span class="keyword">return</span> namespaceHandler;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (ClassNotFoundException ex) &#123;</span><br><span class="line">				<span class="keyword">throw</span> <span class="keyword">new</span> FatalBeanException(<span class="string">"Could not find NamespaceHandler class ["</span> + className +</span><br><span class="line">						<span class="string">"] for namespace ["</span> + namespaceUri + <span class="string">"]"</span>, ex);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (LinkageError err) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> FatalBeanException(<span class="string">"Unresolvable class definition for NamespaceHandler class ["</span> +</span><br><span class="line">						className + <span class="string">"] for namespace ["</span> + namespaceUri + <span class="string">"]"</span>, err);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里主要做了一件事情，就是获取<strong>nameSpaceUri</strong>对应的<strong>NameSpaceHandler</strong>,首先会调动<strong>getHandlerMappings</strong>方法获取全部的<strong>NameSpaceHandler，</strong>然后通过<strong>namespaceUri</strong>获取对应的<strong>NameSpaceHandler，</strong>如果还未实例化则进行实例化操作执行init方法向parsers注册解析类，反之直接返回；<strong>getHandlerMappings</strong>方法获取的<strong>NameSpaceHandler</strong>是解析于<strong>resource/META-INF/spring.handler 文件下, key就是namespaceUri,value就是自定义的NameSpaceHandler；</strong></p>
+<ul>
+<li>getHandlerMappings方法源码：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Load the specified NamespaceHandler mappings lazily.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> Map&lt;String, Object&gt; <span class="title">getHandlerMappings</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	Map&lt;String, Object&gt; handlerMappings = <span class="keyword">this</span>.handlerMappings;</span><br><span class="line">	<span class="keyword">if</span> (handlerMappings == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">			handlerMappings = <span class="keyword">this</span>.handlerMappings;</span><br><span class="line">			<span class="keyword">if</span> (handlerMappings == <span class="keyword">null</span>) &#123;</span><br><span class="line">				<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">					logger.trace(<span class="string">"Loading NamespaceHandler mappings from ["</span> + <span class="keyword">this</span>.handlerMappingsLocation + <span class="string">"]"</span>);</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					<span class="comment">// 这里的handlerMappingsLocation指定的地址就是 resources 中的 META-INF/spring.handlers</span></span><br><span class="line">					Properties mappings =</span><br><span class="line">								PropertiesLoaderUtils.loadAllProperties(<span class="keyword">this</span>.handlerMappingsLocation, <span class="keyword">this</span>.classLoader);</span><br><span class="line">					<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">						logger.trace(<span class="string">"Loaded NamespaceHandler mappings: "</span> + mappings);</span><br><span class="line">					&#125;</span><br><span class="line">					handlerMappings = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;(mappings.size());</span><br><span class="line">					CollectionUtils.mergePropertiesIntoMap(mappings, handlerMappings);</span><br><span class="line">					<span class="keyword">this</span>.handlerMappings = handlerMappings;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">					<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">								<span class="string">"Unable to load NamespaceHandler mappings from location ["</span> + <span class="keyword">this</span>.handlerMappingsLocation + <span class="string">"]"</span>, ex);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> handlerMappings;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>getHandlerMappings就是解析spring.handler文件和执行NameSpaceHandler的init方法并放入缓存的操作，NameSpaceHandler获取到了以后我们看一下init注册的BeanDefinitionParser的parser方法；</strong></p>
+<ul>
+<li>NameSpaceHandlerSupport的parse方法源码：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Parses the supplied &#123;<span class="doctag">@link</span> Element&#125; by delegating to the &#123;<span class="doctag">@link</span> BeanDefinitionParser&#125; that is</span></span><br><span class="line"><span class="comment"> * registered for that &#123;<span class="doctag">@link</span> Element&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> BeanDefinition <span class="title">parse</span><span class="params">(Element element, ParserContext parserContext)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 在 NamespaceHandlerSupport 中的 parser 集合中获取 BeanDefinitionParser 的实现类 进行 parser</span></span><br><span class="line">	BeanDefinitionParser parser = findParserForElement(element, parserContext);</span><br><span class="line">	<span class="keyword">return</span> (parser != <span class="keyword">null</span> ? parser.parse(element, parserContext) : <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>parse方法做了两件事情：</strong></p>
+<p><strong>1：通过定义的标签属性(例如：**</strong>component-scan<strong>**)获取对应的BeanDefinitionParser解析类，源码如下：</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Locates the &#123;<span class="doctag">@link</span> BeanDefinitionParser&#125; from the register implementations using</span></span><br><span class="line"><span class="comment"> * the local name of the supplied &#123;<span class="doctag">@link</span> Element&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> BeanDefinitionParser <span class="title">findParserForElement</span><span class="params">(Element element, ParserContext parserContext)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 这里判断各种标签的解析策略 获取标签名字</span></span><br><span class="line">	String localName = parserContext.getDelegate().getLocalName(element);</span><br><span class="line">	<span class="comment">// 从 parsers 中获取对应的解析策略类  parsers 是在 NameSpaceHandler 的 init 方法是初始化的；</span></span><br><span class="line">	BeanDefinitionParser parser = <span class="keyword">this</span>.parsers.get(localName);</span><br><span class="line">	<span class="keyword">if</span> (parser == <span class="keyword">null</span>) &#123;</span><br><span class="line">		parserContext.getReaderContext().fatal(</span><br><span class="line">				<span class="string">"Cannot locate BeanDefinitionParser for element ["</span> + localName + <span class="string">"]"</span>, element);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 返回对应的策略类进行解析</span></span><br><span class="line">	<span class="keyword">return</span> parser;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>2：开始解析；</strong></p>
+<ul>
+<li><strong>parse方法源码：</strong></li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> BeanDefinition <span class="title">parse</span><span class="params">(Element element, ParserContext parserContext)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 获取 basePackage 的 路径</span></span><br><span class="line">	String basePackage = element.getAttribute(BASE_PACKAGE_ATTRIBUTE);</span><br><span class="line">	<span class="comment">// 解析给定文本中的$&#123;.&#125;，将其替换为由&#123;@link #getProperty&#125;解析的相应属性值 就是可以使用 $&#123;&#125; 和 properties中的值对应</span></span><br><span class="line">	basePackage = parserContext.getReaderContext().getEnvironment().resolvePlaceholders(basePackage);</span><br><span class="line">	<span class="comment">//我们这里在设置 base-package 的值时, 可以通过上面指示的分隔符 ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS 进行多个package的指定. 可以使用”,” “;” “\t\n(回车符)”来分割多个包名</span></span><br><span class="line">	String[] basePackages = StringUtils.tokenizeToStringArray(basePackage,</span><br><span class="line">			ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Actually scan for bean definitions and register them.</span></span><br><span class="line">	<span class="comment">// 下面的代码就是 实际扫描bean定义并注册它们。</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 配置 ClassPathBeanDefinitionScanner</span></span><br><span class="line">	ClassPathBeanDefinitionScanner scanner = configureScanner(parserContext, element);</span><br><span class="line">	<span class="comment">// 扫描 并 注册</span></span><br><span class="line">	Set&lt;BeanDefinitionHolder&gt; beanDefinitions = scanner.doScan(basePackages);</span><br><span class="line">	<span class="comment">// 处理 annotation-config</span></span><br><span class="line">	registerComponents(parserContext.getReaderContext(), beanDefinitions, element);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>parse方法主要做了以下五件事情：</p>
+<p>1：获取basePackage的值，就是xml中配置的路径地址；</p>
+<p>2：basePackage可以配置多个，使用 ‘,’ ‘;’ 或者回车符 进行分割；</p>
+<p>3：初始化ClassPathBeanDefinitionScanner，后边的解析操作有ClassPathBeanDefinitionScanner来完成；</p>
+<p>4：扫描并注册bean；</p>
+<p>5：处理annotation-config(这个后续会详细讲解，这里就不赘述了)</p>
+<ul>
+<li>先看一下configureScanner方法源码：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> ClassPathBeanDefinitionScanner <span class="title">configureScanner</span><span class="params">(ParserContext parserContext, Element element)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">boolean</span> useDefaultFilters = <span class="keyword">true</span>;</span><br><span class="line">	<span class="comment">// 设置 use-default-filters 标签  use-default-filters 属性的默认值为 true，即使用默认的 Filter 进行包扫描，而默认的 Filter 对标有 @Service,@Controller和@Repository 的注解的类进行扫描</span></span><br><span class="line">	<span class="keyword">if</span> (element.hasAttribute(USE_DEFAULT_FILTERS_ATTRIBUTE)) &#123;</span><br><span class="line">		useDefaultFilters = Boolean.valueOf(element.getAttribute(USE_DEFAULT_FILTERS_ATTRIBUTE));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Delegate bean definition registration to scanner class.</span></span><br><span class="line">	<span class="comment">// 将注册Bean的任务委托给ClassPathBeanDefinitionScanner类。初始化 ClassPathBeanDefinitionScanner  ，ClassPathBeanDefinitionScanner 是解析conponentScanner 的类</span></span><br><span class="line">	ClassPathBeanDefinitionScanner scanner = createScanner(parserContext.getReaderContext(), useDefaultFilters);</span><br><span class="line">		scanner.setBeanDefinitionDefaults(parserContext.getDelegate().getBeanDefinitionDefaults());</span><br><span class="line">		scanner.setAutowireCandidatePatterns(parserContext.getDelegate().getAutowireCandidatePatterns());</span><br><span class="line"></span><br><span class="line">	<span class="comment">// set RESOURCE_PATTERN_ATTRIBUTE 设置 扫描Resource(资源) 路径 默认为 "**/*.class"</span></span><br><span class="line">	<span class="keyword">if</span> (element.hasAttribute(RESOURCE_PATTERN_ATTRIBUTE)) &#123;</span><br><span class="line">		scanner.setResourcePattern(element.getAttribute(RESOURCE_PATTERN_ATTRIBUTE));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="comment">// set name-generator</span></span><br><span class="line">		<span class="comment">// 初始化bean 名称生成器</span></span><br><span class="line">		parseBeanNameGenerator(element, scanner);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">		parserContext.getReaderContext().error(ex.getMessage(), parserContext.extractSource(element), ex.getCause());</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="comment">// 设置bean作用域</span></span><br><span class="line">		parseScope(element, scanner);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">		parserContext.getReaderContext().error(ex.getMessage(), parserContext.extractSource(element), ex.getCause());</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 设置扫描包含 和 排除的 注解</span></span><br><span class="line">	<span class="comment">// 设置过滤器，即用于指定哪些类需要被处理，哪些类需要被忽略</span></span><br><span class="line">	<span class="comment">// set INCLUDE_FILTER_ELEMENT and EXCLUDE_FILTER_ELEMENT</span></span><br><span class="line">	parseTypeFilters(element, scanner, parserContext);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> scanner;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>configureScanner方法主要做了以下五件事：</p>
+<p>1：获取并设置use-default-filters，use-default-filters 属性的默认值为 true，即使用默认的 Filter 进行包扫描，而默认的 Filter 对标有 @Service,@Controller和@Repository 的注解的类进行扫描，如果设置为false，则需要自行对include-filter添加；</p>
+<p>2：初始化ClassPathBeanDefinitionScanner，如果use-default-filters为true则对include-filter进行add操作；</p>
+<p>3：初始化bean 名称生成器；</p>
+<p>4：设置bean作用域；</p>
+<p>5：设置扫描包含 和 排除的 注解，include-filter和exclude-filter；</p>
+<p>上述代码就不展现了，git上代码有对应的注释；</p>
+<ul>
+<li>接下来看scanner.doScan方法：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Perform a scan within the specified base packages,</span></span><br><span class="line"><span class="comment"> * returning the registered bean definitions.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;This method does &lt;i&gt;not&lt;/i&gt; register an annotation config processor</span></span><br><span class="line"><span class="comment"> * but rather leaves this up to the caller.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> basePackages the packages to check for annotated classes</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> set of beans registered if any for tooling registration purposes (never &#123;<span class="doctag">@code</span> null&#125;)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> Set&lt;BeanDefinitionHolder&gt; <span class="title">doScan</span><span class="params">(String... basePackages)</span> </span>&#123;</span><br><span class="line">	Assert.notEmpty(basePackages, <span class="string">"At least one base package must be specified"</span>);</span><br><span class="line">	Set&lt;BeanDefinitionHolder&gt; beanDefinitions = <span class="keyword">new</span> LinkedHashSet&lt;&gt;();</span><br><span class="line">	<span class="comment">// 循环扫描</span></span><br><span class="line">	<span class="keyword">for</span> (String basePackage : basePackages) &#123;</span><br><span class="line">		<span class="comment">// 获取指定包下所有 BeanDefinition</span></span><br><span class="line">		Set&lt;BeanDefinition&gt; candidates = findCandidateComponents(basePackage);</span><br><span class="line">		<span class="keyword">for</span> (BeanDefinition candidate : candidates) &#123;</span><br><span class="line">			<span class="comment">// 获取一个ScopeMetadata对象，默认为AnnotationScopeMetadataResolver</span></span><br><span class="line">			<span class="comment">// 如果目标类未被@Scope注解，则返回一个默认的ScopeMetadata</span></span><br><span class="line">			ScopeMetadata scopeMetadata = <span class="keyword">this</span>.scopeMetadataResolver.resolveScopeMetadata(candidate);</span><br><span class="line">			candidate.setScope(scopeMetadata.getScopeName());</span><br><span class="line"></span><br><span class="line">			<span class="comment">// 使用bean名称生成器生成bean名称，默认生成器为AnnotationBeanNameGenerator</span></span><br><span class="line">			<span class="comment">// 首先是以注解的value为bean名称，如果注解的value没有值，则使用默认的名称</span></span><br><span class="line">			String beanName = <span class="keyword">this</span>.beanNameGenerator.generateBeanName(candidate, <span class="keyword">this</span>.registry);</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> (candidate <span class="keyword">instanceof</span> AbstractBeanDefinition) &#123;</span><br><span class="line">				postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (candidate <span class="keyword">instanceof</span> AnnotatedBeanDefinition) &#123;</span><br><span class="line">				<span class="comment">// 处理定义在目标类上的注解，包括@Lazy, @Primary, @DependsOn, @Role, @Description</span></span><br><span class="line">				<span class="comment">// 这里会检查和 设置 AnnotatedBeanDefinition 的 @Lazy(懒加载) @Primary(主要，https://www.cnblogs.com/liaojie970/p/7885106.html) @DependsOn(需要依赖但不需要持有) 注解</span></span><br><span class="line">					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 检查beanName是否已经存在 BeanDefinitionRegistry 中存在。</span></span><br><span class="line">			<span class="keyword">if</span> (checkCandidate(beanName, candidate)) &#123;</span><br><span class="line">				<span class="comment">//beanName 还没使用过</span></span><br><span class="line">				BeanDefinitionHolder definitionHolder = <span class="keyword">new</span> BeanDefinitionHolder(candidate, beanName);</span><br><span class="line">				<span class="comment">// 如果有必要，则创建作用域代理</span></span><br><span class="line">				<span class="comment">// 如果创建了代理，则返回表示代理对象的BeanDefinitionHolder</span></span><br><span class="line">				definitionHolder =</span><br><span class="line">							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, <span class="keyword">this</span>.registry);</span><br><span class="line">				beanDefinitions.add(definitionHolder);</span><br><span class="line">				<span class="comment">// 注册Bean</span></span><br><span class="line">				registerBeanDefinition(definitionHolder, <span class="keyword">this</span>.registry);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> beanDefinitions;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看以下在doScan方法中都做了什么：</p>
+<p>1：获取指定包下(指定的basePackage)所有 BeanDefinition；</p>
+<p>2：获取一个ScopeMetadata对象，默认为AnnotationScopeMetadataResolver，如果目标类未被@Scope注解，则返回一个默认的ScopeMetadata；</p>
+<p>3：使用bean名称生成器生成bean名称，默认生成器为AnnotationBeanNameGenerator，如果注解上的value值是null，则需要生成；</p>
+<p>4：设置AutowireCandidate autowire-candidate=”false” 表示该对象不参与自动注入，借鉴：<a href="https://blog.csdn.net/shangboerds/article/details/72758095" target="_blank" rel="noopener">https://blog.csdn.net/shangboerds/article/details/72758095</a></p>
+<p>5：处理定义在目标类上的注解，包括@Lazy, @Primary, @DependsOn, @Role, @Description，这里会检查和设置 AnnotatedBeanDefinition 的 @Lazy(懒加载) @Primary(主要，<a href="https://www.cnblogs.com/liaojie970/p/7885106.html" target="_blank" rel="noopener">https://www.cnblogs.com/liaojie970/p/7885106.html</a>) @DependsOn(需要依赖但不需要持有) 注解；</p>
+<p>6：检查beanName是否已经存在 beanDefinitionMap 中存在；</p>
+<p>7：如果设置了scopedProxyMode，则需要创建代理类和注册代理类；</p>
+<p>8：调用registerBeanDefinition注册bean，就是put到beanDefinitionMap中；</p>
+<ul>
+<li>这里只说核心的scanCandidateComponents方法，其他的方法都很简单，读者自行通过debug来做就可以了：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Set&lt;BeanDefinition&gt; <span class="title">scanCandidateComponents</span><span class="params">(String basePackage)</span> </span>&#123;</span><br><span class="line">	Set&lt;BeanDefinition&gt; candidates = <span class="keyword">new</span> LinkedHashSet&lt;&gt;();</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="comment">// ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX = "classpath*:";</span></span><br><span class="line">		<span class="comment">// 通过观察resolveBasePackage()方法的实现, 我们可以在设置basePackage时, 使用形如$&#123;&#125;的占位符, Spring会在这里进行替换</span></span><br><span class="line">		<span class="comment">// this.resourcePattern 默认为 "**/*.class" resourcePattern 可以再xml中配置</span></span><br><span class="line">		String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +</span><br><span class="line">				resolveBasePackage(basePackage) + <span class="string">'/'</span> + <span class="keyword">this</span>.resourcePattern;</span><br><span class="line">		<span class="comment">// 使用上面拼接出的形如 "classpath*:xx/yyy/zzz/**/*.class", 将其检索为Spring内置的Resource对象(这样就统一化了资源的差异)</span></span><br><span class="line">		<span class="comment">// 使用ResourcePatternResolver的getResources方法获取 路径下全部  比如：classpath*:lantao/scan/**/*.class</span></span><br><span class="line">		Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br><span class="line">		<span class="keyword">boolean</span> traceEnabled = logger.isTraceEnabled();</span><br><span class="line">		<span class="keyword">boolean</span> debugEnabled = logger.isDebugEnabled();</span><br><span class="line">		<span class="keyword">for</span> (Resource resource : resources) &#123;</span><br><span class="line">			<span class="keyword">if</span> (traceEnabled) &#123;</span><br><span class="line">				logger.trace(<span class="string">"Scanning "</span> + resource);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// file是否可读</span></span><br><span class="line">			<span class="keyword">if</span> (resource.isReadable()) &#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					<span class="comment">// 获取元数据  元数据就是用来定义数据的数据 就是定义 class 的 属性</span></span><br><span class="line">					MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);</span><br><span class="line"></span><br><span class="line">					<span class="comment">// 根据锅炉器来判断是否符合要求 做  includeFilters excludeFilters 的判断</span></span><br><span class="line">					<span class="keyword">if</span> (isCandidateComponent(metadataReader)) &#123;</span><br><span class="line">						<span class="comment">// 实例化 ScannedGenericBeanDefinition</span></span><br><span class="line">						ScannedGenericBeanDefinition sbd = <span class="keyword">new</span> ScannedGenericBeanDefinition(metadataReader);</span><br><span class="line">						sbd.setResource(resource);</span><br><span class="line">						sbd.setSource(resource);</span><br><span class="line">						<span class="comment">// 判断类必须是一个具体的实现类，并且它的实例化必须是独立的</span></span><br><span class="line">						<span class="keyword">if</span> (isCandidateComponent(sbd)) &#123;</span><br><span class="line">							<span class="keyword">if</span> (debugEnabled) &#123;</span><br><span class="line">								logger.debug(<span class="string">"Identified candidate component class: "</span> + resource);</span><br><span class="line">							&#125;</span><br><span class="line">							candidates.add(sbd);</span><br><span class="line">						&#125;</span><br><span class="line">						<span class="keyword">else</span> &#123;</span><br><span class="line">							<span class="keyword">if</span> (debugEnabled) &#123;</span><br><span class="line">								logger.debug(<span class="string">"Ignored because not a concrete top-level class: "</span> + resource);</span><br><span class="line">							&#125;</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="keyword">else</span> &#123;</span><br><span class="line">						<span class="keyword">if</span> (traceEnabled) &#123;</span><br><span class="line">							logger.trace(<span class="string">"Ignored because not matching any filter: "</span> + resource);</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">					<span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(</span><br><span class="line">								<span class="string">"Failed to read candidate component class: "</span> + resource, ex);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="keyword">if</span> (traceEnabled) &#123;</span><br><span class="line">					logger.trace(<span class="string">"Ignored because not readable: "</span> + resource);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(<span class="string">"I/O failure during classpath scanning"</span>, ex);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> candidates;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里主要就是做了通过ResourcePatternResolver的getResource获取指定路径的资源文件，再通过资源文件Resource获取MetadataReader (元数据就是用来定义数据的数据 就是定义 class 的 属性),接下来通过isCandidateComponent方法来做核心处理，因为通过路径获取的资源是全部的，不是想要的，通过isCandidateComponent方法来做 ncludeFilters excludeFilters 的判断，再通过isCandidateComponent(sbd)判断BeanDefinition必须是一个实现类，不可以是接口等；</p>
+<ul>
+<li><p>我们看一下核心判断方法isCandidateComponent：</p>
+</li>
+<li><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Determine whether the given class does not match any exclude filter</span></span><br><span class="line"><span class="comment">	 * and does match at least one include filter.</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> metadataReader the ASM ClassReader for the class</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> whether the class qualifies as a candidate component</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">isCandidateComponent</span><span class="params">(MetadataReader metadataReader)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">		<span class="comment">// 判断 excludeFilters 的 TypeFilter</span></span><br><span class="line">		<span class="keyword">for</span> (TypeFilter tf : <span class="keyword">this</span>.excludeFilters) &#123;</span><br><span class="line">			<span class="keyword">if</span> (tf.match(metadataReader, getMetadataReaderFactory())) &#123;</span><br><span class="line">				<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 判断逻辑 includeFilters 中的 TypeFilter 默认包含的filter有 @components 和 引用他的  @service @controller @Repository</span></span><br><span class="line">		<span class="keyword">for</span> (TypeFilter tf : <span class="keyword">this</span>.includeFilters) &#123;</span><br><span class="line">			<span class="keyword">if</span> (tf.match(metadataReader, getMetadataReaderFactory())) &#123;</span><br><span class="line">				<span class="comment">// 判断 @Conditional ， @Conditional是Spring4新提供的注解，它的作用是按照一定的条件进行判断，满足条件给容器注册bean。 还有 @ConditionalOnXX 等注解</span></span><br><span class="line">				<span class="keyword">return</span> isConditionMatch(metadataReader);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="点击并拖拽以移动"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Determine whether the given bean definition qualifies as candidate.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;The default implementation checks whether the class is not an interface</span></span><br><span class="line"><span class="comment"> * and not dependent on an enclosing class.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;Can be overridden in subclasses.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> beanDefinition the bean definition to check</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> whether the bean definition qualifies as a candidate component</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">isCandidateComponent</span><span class="params">(AnnotatedBeanDefinition beanDefinition)</span> </span>&#123;</span><br><span class="line">	AnnotationMetadata metadata = beanDefinition.getMetadata();</span><br><span class="line">	<span class="comment">// metadata.isIndependent() 是独立的 &amp;</span></span><br><span class="line">	<span class="comment">// metadata.isConcrete() 是否是接口或者是抽象类 或</span></span><br><span class="line">	<span class="comment">// 必须是抽象类 和 有@lookup 注解</span></span><br><span class="line">	<span class="keyword">return</span> (metadata.isIndependent() &amp;&amp; (metadata.isConcrete() ||</span><br><span class="line">			(metadata.isAbstract() &amp;&amp; metadata.hasAnnotatedMethods(Lookup.class.getName()))));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="点击并拖拽以移动"></p>
+</li>
+</ul>
+<p>  到这里就已经讲完了Component-scan扫描注入的源码，这里涉及代理和annotation-config没有做详细的讲解，会在后续的文章中做，码字不易，转发请注明出处：<a href="https://blog.csdn.net/qq_30257149/article/details/88596355" target="_blank" rel="noopener">https://blog.csdn.net/qq_30257149/article/details/88596355</a></p>
+<p>  博客地址：<a href="https://lantaogithub.github.io" target="_blank" rel="noopener">https://lantaogithub.github.io</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/03/16/Spring源码系列/Spring源码之注解扫描Component-scan/" data-id="cjx42w1io0004ykx4gxjlo830" class="article-share-link">分享</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Component-scan/">Component-scan</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/spring源码/">spring源码</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+    
+  <nav class="article-nav">
+    
+      <a href="/2019/06/14/锁/管程含义/" class="article-nav-link">
+        <strong class="article-nav-caption">前一篇</strong>
+        <div class="article-nav-title">
+          
+            Java线程生命周期和锁的简单使用
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2019/03/14/Jvm/Java内存模型/" class="article-nav-link">
+        <strong class="article-nav-caption">后一篇</strong>
+        <div class="article-nav-title">Java内存模型</div>
+      </a>
+    
+  </nav>
+
+
+  
+
+  
+    
+  <div class="gitalk" id="gitalk-container"></div>
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+  <script type="text/javascript">
+    var gitalk = new Gitalk({
+      clientID: 'eacf3314ff57a55108e0',
+      clientSecret: '267e4903bc9a8d92733ee6f4800a522de70384e1',
+      repo: 'lantaoGitHub.github.io',
+      owner: 'lantaoGitHub',
+      admin: ['lantaoGitHub'],
+      // id: location.pathname,      // Ensure uniqueness and length less than 50
+      id: md5(location.pathname),
+      distractionFreeMode: false,  // Facebook-like distraction free mode
+      pagerDirection: 'last'
+    })
+
+  gitalk.render('gitalk-container')
+  </script>
+
+  
+
+</article>
+
+
+
+</section>
+  <footer class="footer">
+  
+  <div class="outer">
+    <ul align="center" class="list-inline">
+
+
+
+      
+
+      <li>&copy; 2019 lantao</li>
+      <li>Author:  <a href="https://lantaogithub.github.io/">兰涛</a></li>
+      <li>Email：lantao0518@sina.com </li>
+      
+<br>
+      <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+ 
+      <ul class="list-inline">
+  
+    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+</ul>
+
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>&nbsp&nbsp&nbsp
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+      <!--
+      <li><a href="/">兰涛</a></li>
+      -->
+    </ul>
+
+
+
+
+
+
+
+  </div>
+
+ 
+
+</footer>
+
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/favicon.ico" alt="lantao"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">主页</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">归档</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/categories">分类</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/tags">标签云</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/gallery">相册</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">关于</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        搜索
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+      <li class="nav-item">
+          <div class="totop" id="totop">
+    <i class="fe fe-rocket"></i>
+</div>
+      </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+  <script src="/js/search.js"></script>
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>
