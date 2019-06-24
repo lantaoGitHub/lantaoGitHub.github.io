@@ -109,7 +109,7 @@
 </li>
 <li><h4 id="等待超时状态"><a href="#等待超时状态" class="headerlink" title="等待超时状态"></a><strong>等待超时状态</strong></h4><p> 在执行Object.await(time), Object.wait(time), Object.sellp(time), LockSupport.parkUntil,lockSupport.parkNanos 进入等待超时状态。<br>&nbsp;</p>
 </li>
-<li><h4 id="终止状态"><a href="#终止状态" class="headerlink" title="终止状态"></a><strong>终止状态</strong></h4><p>线程执行完毕或执行Thread.interrupt()或执行不建议使用的Thread.stop() 注意：Thread.stop尽量不要使用，是直接强行结束，不会释放资源 ；</p>
+<li><h4 id="终止状态"><a href="#终止状态" class="headerlink" title="终止状态"></a><strong>终止状态</strong></h4><p>线程执行完毕或者执行了Thread.interrupt() / Thread.stop()，不建议使用的Thread.stop() 因为 Thread.stop是直接<strong>强行</strong>结束，<strong>不会释放资源</strong> ；</p>
 </li>
 <li><h4 id="配图"><a href="#配图" class="headerlink" title="配图"></a><strong>配图</strong></h4><p> <img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/%E7%BA%BF%E7%A8%8B%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.png" alt></p>
 </li>
@@ -152,7 +152,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/06/14/多线程/Java线程的生命周期和锁的使用/" data-id="cjx42yl400009zhx410e1mmg2" class="article-share-link">分享</a>
+      <a data-url="http://yoursite.com/2019/06/14/多线程/Java线程的生命周期和锁的使用/" data-id="cjx9p1zcg0009cmx432554679" class="article-share-link">分享</a>
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/多线程/">多线程</a></li></ul>
 
