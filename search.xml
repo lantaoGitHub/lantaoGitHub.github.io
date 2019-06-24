@@ -3,12 +3,13 @@
   <entry>
     <title><![CDATA[数组]]></title>
     <url>%2F2019%2F06%2F21%2F%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%2F%E6%95%B0%E7%BB%84%2F</url>
-    <content type="text"><![CDATA[记录学习中的笔记。 数组概念数组（Array）是一种线性表数据结构。它用一组连续的内存空间，来存储一组具有相同类型的数据。 线性表线性表就是数据排成一条线一样的数据结构，每个线性表最多只有前后两个方向，数组，链表丶队列丶栈等都是线性表数据结构。 非线性表非线性表就是数据不规则，与线性表是相对立的，比如二叉树丶堆丶等，在非线性表中，数据之间并不是简单的前后关系。 数组随机访问 公式1address[i] = base_address + i * data_type_size address[i] : 下标 i 的地址值。 base_address： 数组的首地址。 data_type_size： 数组中每个元素的大小，也就是数据类型大小(字节)，例如int是4个字节。 数组的增加和删除数组 (Array) 在增删查这三个动作中，查询是高效的，但是增和删是低效的，查询高效是因为数组支持随机访问，时间复杂度是 O(1) ,这里就不多赘述了，但是在增加和删除的动作中，因为会涉及数据搬移，所以时间复杂度是 O(n) ，下面来详细讲解。 低效的”插入”和”删除”color=#0099ff size=72 face=”黑体”]]></content>
+    <content type="text"><![CDATA[数据结构课程学习笔记。 数组概念数组（Array）是一种线性表数据结构。它用一组连续的内存空间，来存储一组具有相同类型的数据, 并且不支持动态扩容。 线性表线性表就是数据排成一条线一样的数据结构，每个线性表最多只有前后两个方向，数组，链表丶队列丶栈等都是线性表数据结构。 非线性表非线性表就是数据不规则，与线性表是相对立的，比如二叉树丶堆丶等，在非线性表中，数据之间并不是简单的前后关系。 数组随机访问 公式1address[i] = base_address + i * data_type_size address[i] : 下标 i 的地址值。 base_address： 数组的首地址。 data_type_size： 数组中每个元素的大小，也就是数据类型大小(字节)，例如int是4个字节。 数组的增加和删除数组 (Array) 在增删查这三个动作中，查询是高效的，但是增和删是低效的，查询高效是因为数组支持随机访问，时间复杂度是 O(1) ,这里就不多赘述了，但是在增加和删除的动作中，因为会涉及数据搬移，所以时间复杂度是 O(n) ，下面来详细讲解。 低效的”插入”和”删除”1int[] info = new int[6]; 插入数组 info 是一个一维数组，其内容是 33,44,66,77,88 现在需要在下标 2 的位置插入 55 ，将其变成33 44 55 66 77 88的数组，这其中涉及将下标 2 到下标 4 的之间进行数据进行搬移，完成后在下标 2 的位置插入 55 , 其复杂度是 O(n)， 但如果是在最后进行插入的话其复杂度是 O(1)。 删除还拿数组 info 来举例，数组删除前其内容是 33,44,00,55,66,77 现在进行删除操作，删除下标为 2 内容，这其中涉及将下标 3 到 5 的内容向前搬移，其操作的时间复杂度是 O(n) ，如果是是删除最后一位且后面没有内容，则其时间复杂度是O(1) 。 因插入和删除操作会涉及到数据搬移,所以说他是低效的。 CPU缓存Cpu缓存的最小单位是Cpu缓存行，一个缓存行大小通常是64字节(取决于CPU)，试想一下你正在遍历一个长度为 16 的 long 数组 data[16]，原始数据自然存在于主内存中，访问过程描述如下： 1：访问 data[0]，CPU core 尝试访问 CPU Cache，未命中。 2：尝试访问主内存，操作系统一次访问的单位是一个 Cache Line 的大小 — 64 字节，这意味着：既从主内存中获取3：到了 data[0] 的值，同时将 data[0] ~ data[7] 加入到了 CPU Cache 之中， 4：访问 data[1]~data[7]，CPU core 尝试访问 CPU Cache，命中直接返回。 5：访问 data[8]，CPU core 尝试访问 CPU Cache，未命中, 尝试访问主存，重复步骤2。]]></content>
       <categories>
         <category>Array</category>
       </categories>
       <tags>
         <tag>Array</tag>
+        <tag>数据结构</tag>
       </tags>
   </entry>
   <entry>
@@ -20,17 +21,6 @@
       </categories>
       <tags>
         <tag>String</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title><![CDATA[Java线程生命周期和锁的简单使用]]></title>
-    <url>%2F2019%2F06%2F14%2F%E9%94%81%2F%E7%AE%A1%E7%A8%8B%E5%90%AB%E4%B9%89%2F</url>
-    <content type="text"><![CDATA[简单介绍管程 管程 解决互斥和同步 语义：管程的全拼就是 ‘管理共享变量以及共享变量的操作过程’，让他们支持并发， 管程的模型 模型的区别MESA,HASEN,HOARE的区别就是当条件满足，通知线程和执行的方式；&nbsp; MESAjava使用的管程模型就是MESA，当B线程执行notify或notifyAll通知A线程执行的时候，线程B还会继续执行，这时线程A会到 ‘就绪队列’ ,等待回去监视器(Monitor)锁后继续执行wait()后的方法，可以保证同一时间只有一个线程执行；&nbsp; HASENHASEN模型，要求notify或notifyALl放到放到最后执行，这样线程B执行代码全部执行完成后在执行notify通知线程A，线程A再继续执行wait()后的方法，也可以保证同一时间只有一个线程执行；&nbsp; HOAREHOARE模型,不限制notify或notifyAll的执行位置，但是线程B使用notify或notifyAll的时候，会阻塞线程B，然后执行线程A，线程A执行完成再通知线程B继续执行，同样可以保证同一时间只有一个线程在运行；]]></content>
-      <categories>
-        <category>管程</category>
-      </categories>
-      <tags>
-        <tag>管程</tag>
       </tags>
   </entry>
   <entry>
@@ -53,6 +43,17 @@
       </categories>
       <tags>
         <tag>Lock</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Java线程生命周期和锁的简单使用]]></title>
+    <url>%2F2019%2F06%2F14%2F%E9%94%81%2F%E7%AE%A1%E7%A8%8B%E5%90%AB%E4%B9%89%2F</url>
+    <content type="text"><![CDATA[简单介绍管程 管程 解决互斥和同步 语义：管程的全拼就是 ‘管理共享变量以及共享变量的操作过程’，让他们支持并发， 管程的模型 模型的区别MESA,HASEN,HOARE的区别就是当条件满足，通知线程和执行的方式；&nbsp; MESAjava使用的管程模型就是MESA，当B线程执行notify或notifyAll通知A线程执行的时候，线程B还会继续执行，这时线程A会到 ‘就绪队列’ ,等待回去监视器(Monitor)锁后继续执行wait()后的方法，可以保证同一时间只有一个线程执行；&nbsp; HASENHASEN模型，要求notify或notifyALl放到放到最后执行，这样线程B执行代码全部执行完成后在执行notify通知线程A，线程A再继续执行wait()后的方法，也可以保证同一时间只有一个线程执行；&nbsp; HOAREHOARE模型,不限制notify或notifyAll的执行位置，但是线程B使用notify或notifyAll的时候，会阻塞线程B，然后执行线程A，线程A执行完成再通知线程B继续执行，同样可以保证同一时间只有一个线程在运行；]]></content>
+      <categories>
+        <category>管程</category>
+      </categories>
+      <tags>
+        <tag>管程</tag>
       </tags>
   </entry>
   <entry>

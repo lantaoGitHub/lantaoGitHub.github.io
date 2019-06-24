@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2019-06-21T09:23:52.845Z</updated>
+  <updated>2019-06-24T08:25:23.825Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -21,13 +21,13 @@
     <link href="http://yoursite.com/2019/06/21/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/%E6%95%B0%E7%BB%84/"/>
     <id>http://yoursite.com/2019/06/21/数据结构学习笔记/数组/</id>
     <published>2019-06-20T16:00:00.000Z</published>
-    <updated>2019-06-21T09:23:52.845Z</updated>
+    <updated>2019-06-24T08:25:23.825Z</updated>
     
-    <content type="html"><![CDATA[<p>记录学习中的笔记。</p><a id="more"></a><h2 id="数组概念"><a href="#数组概念" class="headerlink" title="数组概念"></a>数组概念</h2><p><strong>数组</strong>（Array）是一种<strong>线性表数据结构</strong>。它用一组<strong>连续</strong>的<strong>内存空间</strong>，来存储一组具有<strong>相同类型的数据</strong>。</p><ul><li><h3 id="线性表"><a href="#线性表" class="headerlink" title="线性表"></a><strong>线性表</strong></h3><p>线性表就是数据排成一条线一样的数据结构，每个线性表最多只有前后两个方向，数组，链表丶队列丶栈等都是线性表数据结构。</p></li><li><h3 id="非线性表"><a href="#非线性表" class="headerlink" title="非线性表"></a><strong>非线性表</strong></h3><p>非线性表就是数据不规则，与线性表是相对立的，比如二叉树丶堆丶等，在非线性表中，数据之间并不是简单的前后关系。</p></li></ul><h2 id="数组随机访问"><a href="#数组随机访问" class="headerlink" title="数组随机访问"></a><strong>数组随机访问</strong></h2><ul><li><h3 id="公式"><a href="#公式" class="headerlink" title="公式"></a><strong>公式</strong></h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">address[i] = base_address + i * data_type_size</span><br></pre></td></tr></table></figure><p><strong>address[i] :</strong> 下标 i 的地址值。</p><p><strong>base_address：</strong> 数组的<strong>首地址</strong>。</p><p><strong>data_type_size：</strong> 数组中每个元素的大小，也就是数据类型大小(字节)，例如int是4个字节。</p></li></ul><h2 id="数组的增加和删除"><a href="#数组的增加和删除" class="headerlink" title="数组的增加和删除"></a><strong>数组的增加和删除</strong></h2><p><strong>数组</strong> (Array) 在<strong>增删查</strong>这三个动作中，查询是高效的，但是增和删是低效的，查询高效是因为<strong>数组支持随机访问</strong>，时间复杂度是 <strong>O(1)</strong> ,这里就不多赘述了，但是在<strong>增加</strong>和<strong>删除</strong>的动作中，因为会涉及<strong>数据搬移</strong>，所以时间复杂度是 <strong>O(n)</strong> ，下面来详细讲解。</p><ul><li><h3 id="低效的”插入”和”删除”"><a href="#低效的”插入”和”删除”" class="headerlink" title="低效的”插入”和”删除”"></a><strong>低效的”插入”和”删除”</strong></h3><p><font color="#F0E68C">color=#0099ff size=72 face=”黑体”</font></p></li></ul>]]></content>
+    <content type="html"><![CDATA[<p>数据结构课程学习笔记。</p><a id="more"></a><h2 id="数组概念"><a href="#数组概念" class="headerlink" title="数组概念"></a>数组概念</h2><p><strong>数组</strong>（Array）是一种<strong>线性表数据结构</strong>。它用一组<strong>连续</strong>的<strong>内存空间</strong>，来存储一组具有<strong>相同类型的数据</strong>, 并且<strong>不支持动态扩容。</strong></p><ul><li><h3 id="线性表"><a href="#线性表" class="headerlink" title="线性表"></a><strong>线性表</strong></h3><p>线性表就是数据排成一条线一样的数据结构，每个线性表最多只有前后两个方向，数组，链表丶队列丶栈等都是线性表数据结构。</p></li><li><h3 id="非线性表"><a href="#非线性表" class="headerlink" title="非线性表"></a><strong>非线性表</strong></h3><p>非线性表就是数据不规则，与线性表是相对立的，比如二叉树丶堆丶等，在非线性表中，数据之间并不是简单的前后关系。</p></li></ul><h2 id="数组随机访问"><a href="#数组随机访问" class="headerlink" title="数组随机访问"></a><strong>数组随机访问</strong></h2><ul><li><h3 id="公式"><a href="#公式" class="headerlink" title="公式"></a><strong>公式</strong></h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">address[i] = base_address + i * data_type_size</span><br></pre></td></tr></table></figure><p><strong>address[i] :</strong> 下标 i 的地址值。</p><p><strong>base_address：</strong> 数组的<strong>首地址</strong>。</p><p><strong>data_type_size：</strong> 数组中每个元素的大小，也就是数据类型大小(字节)，例如int是4个字节。</p></li></ul><h2 id="数组的增加和删除"><a href="#数组的增加和删除" class="headerlink" title="数组的增加和删除"></a><strong>数组的增加和删除</strong></h2><p><strong>数组</strong> (Array) 在<strong>增删查</strong>这三个动作中，查询是高效的，但是增和删是低效的，查询高效是因为<strong>数组支持随机访问</strong>，时间复杂度是 <strong>O(1)</strong> ,这里就不多赘述了，但是在<strong>增加</strong>和<strong>删除</strong>的动作中，因为会涉及<strong>数据搬移</strong>，所以时间复杂度是 <strong>O(n)</strong> ，下面来详细讲解。</p><ul><li><h4 id="低效的”插入”和”删除”"><a href="#低效的”插入”和”删除”" class="headerlink" title="低效的”插入”和”删除”"></a><strong>低效的”插入”和”删除”</strong></h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span>[] info = <span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">6</span>];</span><br></pre></td></tr></table></figure><h4 id="插入"><a href="#插入" class="headerlink" title="插入"></a><strong>插入</strong></h4><p>数组 <strong>info</strong> 是一个<strong>一维数组</strong>，其内容是 <strong>33,44,66,77,88</strong> 现在需要在<strong>下标 2</strong> 的位置<strong>插入</strong> <strong>55</strong> ，将其变成<strong>33 44 55 66 77 88</strong>的数组，这其中涉及将下标 <strong>2</strong> 到下标 <strong>4</strong> 的之间进行数据进行搬移，完成后在下标 <strong>2</strong> 的位置插入 <strong>55</strong> , <strong>其复杂度是 O(n)， 但如果是在最后进行插入的话其复杂度是 O(1)</strong>。</p><p><img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/%E6%95%B0%E7%BB%84%E6%8F%92%E5%85%A5%E5%86%85%E5%AD%98%E5%9B%BE.jpg" alt></p><h4 id="删除"><a href="#删除" class="headerlink" title="删除"></a><strong>删除</strong></h4><p>还拿<strong>数组 info</strong> 来举例，数组删除前其内容是 <strong>33,44,00,55,66,77</strong> 现在进行删除操作，删除下标为 <strong>2</strong> 内容，这其中涉及<strong>将下标 3 到 5 的内容向前搬移</strong>，其操作的时间复杂度是 <strong>O(n)</strong> ，如果是是<strong>删除最后一位且后面没有内容</strong>，则其时间复杂度是<strong>O(1)</strong> 。</p><p><img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/%E6%95%B0%E7%BB%84%E5%88%A0%E9%99%A4%E5%86%85%E5%AD%98%E5%9B%BE.jpg" alt></p><p>因<strong>插入和删除操作</strong>会涉及到<strong>数据搬移</strong>,所以说他是<strong>低效</strong>的。</p><h4 id="CPU缓存"><a href="#CPU缓存" class="headerlink" title="CPU缓存"></a><strong>CPU缓存</strong></h4><p>Cpu缓存的<strong>最小单位</strong>是<strong>Cpu缓存行</strong>，一个缓存行大小通常是<strong>64字节</strong>(取决于CPU)，试想一下你正在遍历一个长度为 16 的 long 数组 data[16]，原始数据自然存在于主内存中，访问过程描述如下：</p><p>1：访问 data[0]，CPU core 尝试访问 CPU Cache，未命中。</p><p>2：尝试访问主内存，操作系统一次访问的单位是一个 Cache Line 的大小 — 64 字节，这意味着：既从主内存中获取3：到了 data[0] 的值，同时将 data[0] ~ data[7] 加入到了 CPU Cache 之中，</p><p>4：访问 data[1]~data[7]，CPU core 尝试访问 CPU Cache，命中直接返回。</p><p>5：访问 data[8]，CPU core 尝试访问 CPU Cache，未命中, 尝试访问主存，重复步骤2。</p></li></ul>]]></content>
     
     <summary type="html">
     
-      &lt;p&gt;记录学习中的笔记。&lt;/p&gt;
+      &lt;p&gt;数据结构课程学习笔记。&lt;/p&gt;
     
     </summary>
     
@@ -35,6 +35,8 @@
     
     
       <category term="Array" scheme="http://yoursite.com/tags/Array/"/>
+    
+      <category term="数据结构" scheme="http://yoursite.com/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
     
   </entry>
   
@@ -57,28 +59,6 @@
     
     
       <category term="String" scheme="http://yoursite.com/tags/String/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Java线程生命周期和锁的简单使用</title>
-    <link href="http://yoursite.com/2019/06/14/%E9%94%81/%E7%AE%A1%E7%A8%8B%E5%90%AB%E4%B9%89/"/>
-    <id>http://yoursite.com/2019/06/14/锁/管程含义/</id>
-    <published>2019-06-13T16:00:00.000Z</published>
-    <updated>2019-06-20T01:48:33.391Z</updated>
-    
-    <content type="html"><![CDATA[<p>简单介绍管程</p><a id="more"></a><h3 id="管程-解决互斥和同步"><a href="#管程-解决互斥和同步" class="headerlink" title="管程 解决互斥和同步"></a>管程 解决互斥和同步</h3><ul><li><p>语义：管程的全拼就是 <strong>‘管理共享变量以及共享变量的操作过程’</strong>，让他们支持并发，</p><h3 id="管程的模型"><a href="#管程的模型" class="headerlink" title="管程的模型"></a>管程的模型</h3></li><li><h4 id="模型的区别"><a href="#模型的区别" class="headerlink" title="模型的区别"></a><strong>模型的区别</strong></h4><p>MESA,HASEN,HOARE的区别就是当条件满足，通知线程和执行的方式；<br>&nbsp; </p></li><li><h4 id="MESA"><a href="#MESA" class="headerlink" title="MESA"></a><strong>MESA</strong></h4><p>java使用的管程模型就是MESA，当B线程执行notify或notifyAll通知A线程执行的时候，线程B还会继续执行，这时线程A会到 <strong>‘就绪队列’</strong> ,等待回去监视器(Monitor)锁后继续执行wait()后的方法，可以保证同一时间只有一个线程执行；<br>&nbsp; </p></li><li><h4 id="HASEN"><a href="#HASEN" class="headerlink" title="HASEN"></a><strong>HASEN</strong></h4><p>HASEN模型，要求notify或notifyALl放到放到最后执行，这样线程B执行代码全部执行完成后在执行notify通知线程A，线程A再继续执行wait()后的方法，也可以保证同一时间只有一个线程执行；<br>&nbsp; </p></li><li><h4 id="HOARE"><a href="#HOARE" class="headerlink" title="HOARE"></a><strong>HOARE</strong></h4><p>HOARE模型,不限制notify或notifyAll的执行位置，但是线程B使用notify或notifyAll的时候，会阻塞线程B，然后执行线程A，线程A执行完成再通知线程B继续执行，同样可以保证同一时间只有一个线程在运行；</p></li></ul>]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;简单介绍管程&lt;/p&gt;
-    
-    </summary>
-    
-      <category term="管程" scheme="http://yoursite.com/categories/%E7%AE%A1%E7%A8%8B/"/>
-    
-    
-      <category term="管程" scheme="http://yoursite.com/tags/%E7%AE%A1%E7%A8%8B/"/>
     
   </entry>
   
@@ -123,6 +103,28 @@
     
     
       <category term="Lock" scheme="http://yoursite.com/tags/Lock/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Java线程生命周期和锁的简单使用</title>
+    <link href="http://yoursite.com/2019/06/14/%E9%94%81/%E7%AE%A1%E7%A8%8B%E5%90%AB%E4%B9%89/"/>
+    <id>http://yoursite.com/2019/06/14/锁/管程含义/</id>
+    <published>2019-06-13T16:00:00.000Z</published>
+    <updated>2019-06-20T01:48:33.391Z</updated>
+    
+    <content type="html"><![CDATA[<p>简单介绍管程</p><a id="more"></a><h3 id="管程-解决互斥和同步"><a href="#管程-解决互斥和同步" class="headerlink" title="管程 解决互斥和同步"></a>管程 解决互斥和同步</h3><ul><li><p>语义：管程的全拼就是 <strong>‘管理共享变量以及共享变量的操作过程’</strong>，让他们支持并发，</p><h3 id="管程的模型"><a href="#管程的模型" class="headerlink" title="管程的模型"></a>管程的模型</h3></li><li><h4 id="模型的区别"><a href="#模型的区别" class="headerlink" title="模型的区别"></a><strong>模型的区别</strong></h4><p>MESA,HASEN,HOARE的区别就是当条件满足，通知线程和执行的方式；<br>&nbsp; </p></li><li><h4 id="MESA"><a href="#MESA" class="headerlink" title="MESA"></a><strong>MESA</strong></h4><p>java使用的管程模型就是MESA，当B线程执行notify或notifyAll通知A线程执行的时候，线程B还会继续执行，这时线程A会到 <strong>‘就绪队列’</strong> ,等待回去监视器(Monitor)锁后继续执行wait()后的方法，可以保证同一时间只有一个线程执行；<br>&nbsp; </p></li><li><h4 id="HASEN"><a href="#HASEN" class="headerlink" title="HASEN"></a><strong>HASEN</strong></h4><p>HASEN模型，要求notify或notifyALl放到放到最后执行，这样线程B执行代码全部执行完成后在执行notify通知线程A，线程A再继续执行wait()后的方法，也可以保证同一时间只有一个线程执行；<br>&nbsp; </p></li><li><h4 id="HOARE"><a href="#HOARE" class="headerlink" title="HOARE"></a><strong>HOARE</strong></h4><p>HOARE模型,不限制notify或notifyAll的执行位置，但是线程B使用notify或notifyAll的时候，会阻塞线程B，然后执行线程A，线程A执行完成再通知线程B继续执行，同样可以保证同一时间只有一个线程在运行；</p></li></ul>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;简单介绍管程&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="管程" scheme="http://yoursite.com/categories/%E7%AE%A1%E7%A8%8B/"/>
+    
+    
+      <category term="管程" scheme="http://yoursite.com/tags/%E7%AE%A1%E7%A8%8B/"/>
     
   </entry>
   
