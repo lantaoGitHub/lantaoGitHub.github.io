@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="业精于勤荒于嬉，行成于思毁于随">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    String#intern方法详解 |
+    
+    码农技术笔记</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-Groovy/Groovy基础语法" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+
+
+    <div class="article-inner">
+        
+            <header class="article-header">
+                
+  
+    <h1 class="article-title" itemprop="name">
+      String#intern方法详解
+    </h1>
+  
+  
+
+
+
+
+            </header>
+            
+
+
+
+                
+                    <div class="article-meta">
+                        <a href="/2019/06/19/Groovy/Groovy基础语法/" class="article-date">
+  <time datetime="2019-06-18T16:00:00.000Z" itemprop="datePublished">2019-06-19</time>
+</a>
+                            
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/String/">String</a>
+  </div>
+
+                        &emsp;<i class="fe fe-bar-chart"></i> <span class="post-count">2.4k</span>字
+&emsp;<i class="fe fe-clock"></i> <span class="post-count">10</span>分钟
+                    </div>
+
+                    
+
+
+
+
+                        
+                            
+    <div class="tocbot"></div>
+
+
+
+
+
+                                
+
+                                    <div class="article-entry" itemprop="articleBody">
+                                        
+
+
+                                            
+
+                                                
+                                                                    <p><span> </span></p>
+<a id="more"></a>
+
+<h1 id="Groovy基础语法"><a href="#Groovy基础语法" class="headerlink" title="Groovy基础语法"></a>Groovy基础语法</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>​        本篇文章主要就是为了讲解一下 <code>Groovy</code> 的基本语法和使用方式，是为了学习 <code>Gradle</code> 做进一步的铺垫，作者会在下一篇中讲解 <code>Gradle</code> 。 </p>
+<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p><code>Groovy</code> 是包含了 <code>基本数据类型</code> 和 <code>对象类型</code>，但是 <strong>最终</strong> 都是 <code>对象类型</code> 的。 </p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> age = <span class="number">100</span></span><br><span class="line">print age.<span class="keyword">class</span></span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">java</span>.<span class="title">lang</span>.<span class="title">Integer</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="类型定义"><a href="#类型定义" class="headerlink" title="类型定义"></a>类型定义</h3><p>​        <code>Groovy</code> 是有 <code>两种类型定义</code> 方式，分别是 <code>强定义</code> 和 <code>弱定义</code> , 如果其他类或方法要是使用定义的变量，那么类型就要使用 <code>强类型</code> ，如果仅仅是使用于当前的方法中的话可以使用 <code>弱类型</code> 定义，因为 <code>强类型</code> 定义的不能动态转换成其他类型，而 <code>弱类型</code> 可以。</p>
+<p><code>强类型</code> 就和 <code>java</code> 定义类型是一样的，使用 <code>int</code> <code>char</code> 等，强制指定数据的类型。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 强定义</span></span><br><span class="line"><span class="keyword">int</span> age = <span class="number">60</span></span><br></pre></td></tr></table></figure>
+
+<p><code>弱类型</code> 是使用 <code>def</code> 关键字进行指定，编译器会在 <code>解析变量值</code> 时进行推断具体是什么数据类型，支持动态类型转换。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 若定义</span></span><br><span class="line"><span class="keyword">def</span> name = <span class="string">'lantao'</span></span><br><span class="line">println name.<span class="keyword">class</span></span><br><span class="line">name = <span class="number">10</span></span><br><span class="line">println name.<span class="keyword">class</span></span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">java</span>.<span class="title">lang</span>.<span class="title">String</span></span></span><br><span class="line"><span class="class"><span class="title">class</span> <span class="title">java</span>.<span class="title">lang</span>.<span class="title">Integer</span></span></span><br></pre></td></tr></table></figure>
+
+<h2 id="String讲解"><a href="#String讲解" class="headerlink" title="String讲解"></a>String讲解</h2><p>​        <code>Groovy</code> 中的 <code>String</code> 和 <code>Java</code> 中的 <code>String</code> 用法是有一点区别的，Groovy 中的 String 可以使用 <code>单引号</code> <code>双引号</code> 和 <code>三引号</code> ，其中 <code>三引号</code> 是带格式输出， <code>Groovy</code> 还包含独有的 <code>GString</code> 类型，<code>GString</code> 类型可以和 <code>String</code> 类型动态的互相转换，就是在代码中不将这两个类型当作一个使用。其中 <code>Groovy</code> 中的 <code>单引号</code>  <code>双引号</code> 和 <code>三引号</code> 使用的数据类型是一样的，均为 <code>java.lang.String</code> 。</p>
+<p>Groovy 中的 <code>双引号</code> 和 <code>三引号</code> 是支持扩展表达式的, 也就是 ${} , 下面是用代码来测试一下。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> name = <span class="string">'张三 $&#123;a&#125;'</span></span><br><span class="line">println name</span><br><span class="line">println name.<span class="keyword">class</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> name_1 = <span class="string">"李四 $&#123;name&#125;"</span></span><br><span class="line">println name_1</span><br><span class="line">println name_1.<span class="keyword">class</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> name_2 =</span><br><span class="line"><span class="string">"""</span></span><br><span class="line"><span class="string">王五 </span></span><br><span class="line"><span class="string">$&#123;name_1&#125;</span></span><br><span class="line"><span class="string">"""</span></span><br><span class="line">println name_2</span><br><span class="line">println name_2.<span class="keyword">class</span></span><br></pre></td></tr></table></figure>
+
+<p>输出结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">张三 $&#123;a&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">java</span>.<span class="title">lang</span>.<span class="title">String</span></span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class">李四 张三 $&#123;</span>a&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">org</span>.<span class="title">codehaus</span>.<span class="title">groovy</span>.<span class="title">runtime</span>.<span class="title">GStringImpl</span></span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class">王五</span></span><br><span class="line"><span class="class">李四 张三 $&#123;</span>a&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">org</span>.<span class="title">codehaus</span>.<span class="title">groovy</span>.<span class="title">runtime</span>.<span class="title">GStringImpl</span></span></span><br></pre></td></tr></table></figure>
+
+<h4 id="String-的常用方法"><a href="#String-的常用方法" class="headerlink" title="String 的常用方法"></a>String 的常用方法</h4><p><code>java.lang.String</code> 的方法我就列举了，这里说的方法都是来源于 <code>DefaultGroovyMethods</code> 和 <code>StringGroovyMethods</code> 类。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// String 常用方法</span></span><br><span class="line"><span class="keyword">def</span> defition = <span class="string">"测试"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串填充(以字符串为中心两端填充) 默认以空格填充</span></span><br><span class="line">println defition.center(<span class="number">8</span>, <span class="string">"a"</span>)</span><br><span class="line"><span class="comment">// 结果 aaa测试aaa</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串填充 默认以空格填充</span></span><br><span class="line">println defition.padLeft(<span class="number">8</span>, <span class="string">"a"</span>)</span><br><span class="line"><span class="comment">// 结果 aaaaaa测试</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串填充 默认以空格填充</span></span><br><span class="line">println defition.padRight(<span class="number">8</span>, <span class="string">"a"</span>)</span><br><span class="line"><span class="comment">// 结果 测试aaaaaa</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串比较</span></span><br><span class="line"><span class="keyword">def</span> defition_1 = <span class="string">"测试"</span></span><br><span class="line">println defition == defition_1</span><br><span class="line"><span class="comment">// 结果 true</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串比较</span></span><br><span class="line">println defition.compareTo(defition_1)</span><br><span class="line"><span class="comment">// 结果 0</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串取下标位内容</span></span><br><span class="line">println defition.getAt(<span class="number">0</span>)</span><br><span class="line"><span class="comment">// 结果 '测'</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串取下标位内容</span></span><br><span class="line">println defition[<span class="number">0</span>]</span><br><span class="line"><span class="comment">// 结果 '测'</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串取下标位内容</span></span><br><span class="line">println defition[<span class="number">0.</span><span class="number">.1</span>]</span><br><span class="line"><span class="comment">// 结果 '测试'</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串首字母大写</span></span><br><span class="line"><span class="keyword">def</span> defition_2 = <span class="string">"abcd"</span></span><br><span class="line">println defition_2.capitalize()</span><br><span class="line"><span class="comment">// 结果 Abcd</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 字符串移除某些指定字符</span></span><br><span class="line">println defition_2 - <span class="string">'a'</span></span><br><span class="line"><span class="comment">// 结果 bcd</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="逻辑判断"><a href="#逻辑判断" class="headerlink" title="逻辑判断"></a>逻辑判断</h2><h3 id="条件逻辑"><a href="#条件逻辑" class="headerlink" title="条件逻辑"></a>条件逻辑</h3><p>​        <code>Groovy</code> 中的 <code>if/else</code> 和 <code>Java</code> 中一致，在这里就不多说了，重点说一下 <code>switch/case</code> 语句。 <code>Groovy</code> 中的 <code>switch/case</code> 支持所有类型，无论是<code>Map</code> <code>List</code> <code>String</code> 等都支持，下面就来测试一下。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> codition = <span class="string">'test'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">switch</span> (codition)&#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">        println <span class="string">'return int'</span></span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">    <span class="keyword">case</span> [<span class="string">'a'</span>,<span class="string">'b'</span>,<span class="string">'c'</span>,<span class="string">'d'</span>]:</span><br><span class="line">        println <span class="string">'return List'</span></span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">    <span class="keyword">case</span> [<span class="string">'test'</span>:<span class="number">2</span>, <span class="string">'b'</span>:<span class="number">3</span>]:</span><br><span class="line">        println <span class="string">'return Map'</span></span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line"><span class="symbol">    default:</span></span><br><span class="line">        println <span class="string">'return default'</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> codition = <span class="string">'test'</span></span><br><span class="line">结果是：</span><br><span class="line"><span class="string">'return Map'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> codition = <span class="string">'a'</span></span><br><span class="line">结果是：</span><br><span class="line"><span class="string">'return List'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> codition = <span class="number">1</span></span><br><span class="line">结果是：</span><br><span class="line"><span class="string">'return int'</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="循环逻辑"><a href="#循环逻辑" class="headerlink" title="循环逻辑"></a>循环逻辑</h3><p><code>Groovy</code> 中的 <code>for</code> 循环是使用的 <code>for in</code> ，也支持 <code>fori</code> , 这里就不写 <code>fori</code> 了, 因为在 <code>Groovy</code> 中 的写法和 <code>Java</code> 中的写法是一样的，接下来就看一下例子。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 0..9 是指范围，意思就是对 0 - 9 一次进行循环</span></span><br><span class="line"><span class="comment">// 0..9 也是可以替换成数组 例如 将0..9 替换成 [0，1，2，3，4，5]</span></span><br><span class="line"><span class="comment">// Grooby 中的 for 也是可以直接循环Map的 例如将 0..9 替换成 ['key1':1,'key2':2]</span></span><br><span class="line"><span class="keyword">for</span> (a <span class="keyword">in</span> <span class="number">0.</span><span class="number">.9</span>)</span><br><span class="line">    count += a</span><br><span class="line"></span><br><span class="line">println <span class="string">"Count 总数为："</span> + count</span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Count 总数为：45</span><br></pre></td></tr></table></figure>
+
+<p>Groovy 中也是可以使用 while 循环，下面就看一个例子。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> i = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> (i &lt; <span class="number">10</span>)&#123;</span><br><span class="line">    count += i</span><br><span class="line">    i++</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">println <span class="string">'Count 总数是:'</span> + count</span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Count 总数是:<span class="number">45</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="集合"><a href="#集合" class="headerlink" title="集合"></a>集合</h2><h3 id="List"><a href="#List" class="headerlink" title="List"></a>List</h3><p>​        <code>Groovy</code> 中的 <code>List</code> 集合的创建方法非常简单，跟 <code>Java</code> 数组的定义方式非常相似的，例如 <code>def list = [1,2,3,4,5]</code>  这就是一个List集合，那数组是怎么定义的呢，其实是 <code>def array = [1,2,3,4,5] as int[]</code> 这就是定义了一个 <code>int</code> 类型的数组，也可以使用弱类型进行定义，使用强类型进行定义 <code>int[] array = [1,2,3,4,5]</code>,下面代码中就来看看 <code>Groovy</code> 中的 <code>List</code> 集合增删改查和循环是怎么操作的。</p>
+<p><code>Groovy</code> 中默认不指定集合类型的话默认使用 <code>java.util.ArrayList</code></p>
+<p>下面代码中的方法均为 <code>Grooby</code> 的独有方法，但 <code>Java</code> 中的 <code>LIst</code> 方法在这里都可以进行使用，就不一一展示了。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> collector</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义List 集合 默认使用 java.util.ArrayList</span></span><br><span class="line"><span class="keyword">def</span> listTest = [<span class="string">'1'</span>, <span class="string">'2'</span>, <span class="string">'3'</span>, <span class="string">'4'</span>, <span class="string">'5'</span>]</span><br><span class="line">println listTest.<span class="keyword">class</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义List 集合 默认使用 java.util.ArrayList</span></span><br><span class="line"><span class="keyword">def</span> listLinked = [<span class="string">'1'</span>, <span class="string">'2'</span>, <span class="string">'3'</span>, <span class="string">'4'</span>, <span class="string">'5'</span>] <span class="keyword">as</span> LinkedList</span><br><span class="line">println listLinked.<span class="keyword">class</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 对数组进行新增操作</span></span><br><span class="line">listTest.add(<span class="string">'8'</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对数组进行删除操作</span></span><br><span class="line">listTest.remove(<span class="string">'5'</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查找第一个元素</span></span><br><span class="line">println listTest.find()</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查找指定元素 (使用Groovy 闭包 相当于Java 的 lamdba )</span></span><br><span class="line">println listTest.find &#123; s -&gt; s.equals(<span class="number">9</span>) &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查找全部元素 (findAll 也可以指定闭包，也就是指定条件)</span></span><br><span class="line">println listTest.findAll()</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修改元素</span></span><br><span class="line">listTest.set(<span class="number">1</span>, <span class="string">'100'</span>)</span><br><span class="line">println listTest</span><br><span class="line"></span><br><span class="line"><span class="comment">// 排序</span></span><br><span class="line"><span class="keyword">def</span> numList = [<span class="number">1</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">7</span>]</span><br><span class="line">numList.sort()</span><br><span class="line">println numList</span><br><span class="line"></span><br><span class="line"><span class="comment">// 自定义排序条件 闭包方式</span></span><br><span class="line">numList.sort &#123; a, b -&gt; a == b ? 0 : a &gt; b ? 1 : <span class="number">-1</span> &#125;</span><br><span class="line">println numList</span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">java</span>.<span class="title">util</span>.<span class="title">ArrayList</span></span></span><br><span class="line"><span class="class"><span class="title">class</span> <span class="title">java</span>.<span class="title">util</span>.<span class="title">LinkedList</span></span></span><br><span class="line"><span class="class">1</span></span><br><span class="line"><span class="class"><span class="title">null</span></span></span><br><span class="line"><span class="class">[1, 2, 3, 4, 8]</span></span><br><span class="line"><span class="class">[1, 100, 3, 4, 8]</span></span><br><span class="line"><span class="class">[1, 3, 4, 5, 7]</span></span><br><span class="line"><span class="class">[1, 3, 4, 5, 7]</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Map"><a href="#Map" class="headerlink" title="Map"></a>Map</h3><p>​        <code>Groovy</code> 中的 <code>Map</code> 集合的创建方法和 <code>LIst</code> 相似，例如: <code>def maps = [&#39;1&#39;:&#39;100&#39;, &#39;2&#39;:&#39;200&#39;]</code> , 定义非常简单，当然，我定义的方式是 <code>弱类型</code> 定义，同样可以使用 <code>强类型</code> 进行定义 <code>HashMap maps = [&#39;1&#39;:&#39;100&#39;, &#39;2&#39;:&#39;200&#39;]</code> , <code>Groovy</code> 中 <code>Map</code> 在不强指定集合类型时默认使用 <code>java.util.LinkedHashMap</code> ，当然我们也可以通过 <code>as</code> 进行指定结合类型，下面通过代码来对 <code>Map</code> 进行 <code>增删改查</code> 操作。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> maps = [<span class="number">1</span>: <span class="string">'100'</span>, <span class="number">2</span>: <span class="string">'200'</span>, <span class="number">4</span>: <span class="string">'100'</span>]</span><br><span class="line">println maps.getClass()</span><br><span class="line"></span><br><span class="line"><span class="comment">// 循环 Map 通过each 方法， 使用闭包方式</span></span><br><span class="line">maps.each &#123; s -&gt; println s &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 循环 Map 使用 for in</span></span><br><span class="line"><span class="keyword">for</span> (s <span class="keyword">in</span> maps) &#123;</span><br><span class="line">    println s.getKey() + <span class="string">'--'</span> + s.getValue()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对Map 新增和修改操作, 如果key 存在则会更新 已存在key 的 value 值 ，当然 这里也可以使用java 的方法</span></span><br><span class="line">maps.<span class="string">'3'</span> = [<span class="string">'11'</span>: <span class="number">1100</span>]</span><br><span class="line">println maps.toString()</span><br><span class="line">maps.remove(<span class="string">'3'</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对 Map 删除</span></span><br><span class="line">maps.remove(<span class="number">2</span>)</span><br><span class="line">println maps.toString()</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对Map 查找操作 查询一个</span></span><br><span class="line">println maps.find &#123; s -&gt; s.key.equals(<span class="number">1</span>) &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查询全部符合规则元素</span></span><br><span class="line">println maps.findAll &#123; s -&gt; s.value.equals(<span class="string">'100'</span>) &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 按照条件 求数量</span></span><br><span class="line">println maps.count &#123; s -&gt; s.value.equals(<span class="string">'100'</span>) &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 按条件分组</span></span><br><span class="line">println maps.groupBy &#123; s -&gt; s.value.equals(<span class="string">'100'</span>) ? '超过100' : <span class="string">'超过200'</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 排序</span></span><br><span class="line">maps.put(<span class="number">10</span>,<span class="string">'100'</span>)</span><br><span class="line">println maps.sort &#123; a, b -&gt; a.key == b.key ? 0 : a.key &gt; b.key ? 1 : <span class="number">-1</span> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">java</span>.<span class="title">util</span>.<span class="title">LinkedHashMap</span></span></span><br><span class="line"><span class="class">1=100</span></span><br><span class="line"><span class="class">2=200</span></span><br><span class="line"><span class="class">4=100</span></span><br><span class="line"><span class="class">1--100</span></span><br><span class="line"><span class="class">2--200</span></span><br><span class="line"><span class="class">4--100</span></span><br><span class="line">[1:100, 2:200, 4:100, 3:[11:1100]]</span><br><span class="line">[<span class="number">1</span>:<span class="number">100</span>, <span class="number">4</span>:<span class="number">100</span>]</span><br><span class="line"><span class="number">1</span>=<span class="number">100</span></span><br><span class="line">[<span class="number">1</span>:<span class="number">100</span>, <span class="number">4</span>:<span class="number">100</span>]</span><br><span class="line"><span class="number">2</span></span><br><span class="line">[超过<span class="number">100</span>:[<span class="number">1</span>:<span class="number">100</span>, <span class="number">4</span>:<span class="number">100</span>]]</span><br><span class="line">[<span class="number">1</span>:<span class="number">100</span>, <span class="number">4</span>:<span class="number">100</span>, <span class="number">10</span>:<span class="number">100</span>]</span><br></pre></td></tr></table></figure>
+
+<h3 id="Set"><a href="#Set" class="headerlink" title="Set"></a>Set</h3><p>​    <code>Groovy</code> 中的 <code>Set</code> 我就不多说了，直接上代码吧，使用方法和 <code>List</code> <code>Map</code> 及其相似。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> collector</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> set = [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>] <span class="keyword">as</span> HashSet</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对set进行新增操作</span></span><br><span class="line">set.add(<span class="number">8</span>)</span><br><span class="line">println set</span><br><span class="line"></span><br><span class="line"><span class="comment">// 对数组进行删除操作</span></span><br><span class="line">set.remove(<span class="number">3</span>)</span><br><span class="line">println set</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查找第一个元素</span></span><br><span class="line">println set.find()</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查找指定元素 (使用Groovy 闭包 相当于Java 的 lamdba )</span></span><br><span class="line">println set.find &#123; s -&gt; s.equals(<span class="number">8</span>) &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查找全部元素 (findAll 也可以指定闭包，也就是指定条件)</span></span><br><span class="line">println set.findAll()</span><br><span class="line"></span><br><span class="line"><span class="comment">// 排序</span></span><br><span class="line">set.sort()</span><br><span class="line">println set</span><br><span class="line"></span><br><span class="line"><span class="comment">// 自定义排序条件 闭包方式</span></span><br><span class="line">set.sort &#123; a, b -&gt; a == b ? 0 : a &gt; b ? 1 : <span class="number">-1</span> &#125;</span><br><span class="line">println set</span><br></pre></td></tr></table></figure>
+
+<p>执行j结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">8</span>]</span><br><span class="line">[<span class="number">1</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">8</span>]</span><br><span class="line"><span class="number">1</span></span><br><span class="line"><span class="number">8</span></span><br><span class="line">[<span class="number">1</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">8</span>]</span><br><span class="line">[<span class="number">1</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">8</span>]</span><br><span class="line">[<span class="number">1</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">8</span>]</span><br></pre></td></tr></table></figure>
+
+<h2 id="对象"><a href="#对象" class="headerlink" title="对象"></a>对象</h2><h3 id="类"><a href="#类" class="headerlink" title="类"></a>类</h3><p>​        <code>Groovy</code> 中创建 <code>对象</code> 和 <code>Java</code> 中是毫无区别的，但是在使用上会简单很多，在 <code>Groovy</code> 中 <code>点属性</code> 就相当于 <code>get属性</code> ，下面就用代码来尝试一下。</p>
+<p><code>Groovy</code> 中的 对象超类是 <code>GroovyObject</code> ，但是 Java 超类是 <code>Object</code> 。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Student</span> &#123;</span></span><br><span class="line">    String name</span><br><span class="line">    Integer age</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 新建对象</span></span><br><span class="line"><span class="keyword">def</span> student = <span class="keyword">new</span> Student()</span><br><span class="line"></span><br><span class="line"><span class="comment">// 赋值</span></span><br><span class="line">student.setName(<span class="string">'小明'</span>)</span><br><span class="line">student.setAge(<span class="number">100</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Groovy 中</span></span><br><span class="line">println <span class="string">"名字：$&#123;student.name&#125;, 年龄: $&#123;student.age&#125;"</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 新建对象并赋值</span></span><br><span class="line"><span class="keyword">def</span> student1 = <span class="keyword">new</span> Student(<span class="string">name:</span> <span class="string">'王五'</span>, <span class="string">age:</span> <span class="number">190</span>)</span><br><span class="line"></span><br><span class="line">println student1.name + <span class="string">'--'</span> + student1.age</span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">名字：小明, 年龄: <span class="number">100</span></span><br><span class="line">王五-<span class="number">-190</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h3><p><code>Groovy</code> 中的 <code>接口</code> 与 <code>Java</code> 中的 <code>定义</code> 和 <code>使用</code> 是一样的，下面我们来定义和测试一下。</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">InterfactTest</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 学习</span></span><br><span class="line">    <span class="keyword">def</span> study();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// coding</span></span><br><span class="line">    <span class="keyword">def</span> coding();</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">InterfaceTestImpl</span> <span class="keyword">implements</span> <span class="title">InterfactTest</span> &#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">def</span> study() &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"开始学习......"</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">def</span> coding() &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"开始Coding......"</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">InterfactTest impl = <span class="keyword">new</span> InterfaceTestImpl()</span><br><span class="line">println impl.<span class="keyword">class</span></span><br><span class="line"></span><br><span class="line">println impl.study()</span><br><span class="line"></span><br><span class="line">println impl.coding()</span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">object</span>.<span class="title">InterfaceTestImpl</span></span></span><br><span class="line"><span class="class">开始学习......</span></span><br><span class="line"><span class="class">开始<span class="title">Coding</span>......</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="结束"><a href="#结束" class="headerlink" title="结束"></a>结束</h2><p>现在已经将 <code>Groovy</code> 中的部分语法讲解完了，会使用这些就已经够用了，讲了这么多 <code>Groovy</code> 的基础语法就是为了能更好的学习 Gradle，因为 <code>Gradle</code> 是使用 <code>Groovy</code> 实现的。下一篇章中会进行 Gradle 的讲解和使用。</p>
+<p><a href="https://github.com/lantaoGitHub/groovylearn" target="_blank" rel="noopener">代码地址</a></p>
+
+                                                                        
+                                    </div>
+                                    <footer class="article-footer">
+
+
+
+
+                                    <img src="/images/ocean/BlogQR.png">
+
+
+
+
+
+
+
+                                        <a data-url="https://www.lantaoblog.site/2019/06/19/Groovy/Groovy基础语法/" data-id="ckgteiln400044hx46tywbvei" class="article-share-link">
+                                            分享
+                                        </a>
+                                        
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/String/">String</a></li></ul>
+
+                                    </footer>
+
+    </div>
+
+    
+        
+  <nav class="article-nav">
+    
+      <a href="/2019/06/21/数据结构学习笔记/数组/" class="article-nav-link">
+        <strong class="article-nav-caption">前一篇</strong>
+        <div class="article-nav-title">
+          
+            数组
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2019/06/19/java基础/String的intern方法详解/" class="article-nav-link">
+        <strong class="article-nav-caption">后一篇</strong>
+        <div class="article-nav-title">String#intern方法详解</div>
+      </a>
+    
+  </nav>
+
+
+            
+
+                
+                    
+    <div class="vcomments" id="vcomments"></div>
+    <script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+        <script>
+            new Valine({
+                el: '#vcomments',
+                appId: 'H7Nh6Kr1FbVOyb1CXa836VCt-gzGzoHsz',
+                appKey: 'St8IaqElFwAgVnPtR5uhga2C',
+                notify: 'false',
+                verify: 'true',
+                avatar: 'mp',
+                pageSize: '10',
+                placeholder: '请输入...'
+            })
+        </script>
+        
+                        
+                            
+
+
+
+
+</article>
+</section>
+  <footer class="footer">
+  <div class="outer">
+ 
+    <ul class="list-inline">
+      <li>&copy; 2020 码农技术笔记</li>
+            <li> <span id="timeDate">载入天数...</span><span id="times">载入时分秒...</span>
+<script>
+    var now = new Date(); 
+    function createtime() { 
+        var grt= new Date("04/26/2019 15:49:00");//此处修改你的建站时间或者网站上线时间 
+        now.setTime(now.getTime()+250); 
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days); 
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours); 
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum); 
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;} 
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum); 
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;} 
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 "; 
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒"; 
+    } 
+	setInterval("createtime()",250);
+</script></li>
+
+      <li>全站共<span class="post-count">57.9k</span>字</li>
+            <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+
+    </ul>
+  </div>
+</footer>
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="码农技术笔记"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">首页</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">归档</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/categories">分类</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/tags">标签</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">关于</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        搜索
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+  <script src="/js/tocbot.min.js"></script>
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>

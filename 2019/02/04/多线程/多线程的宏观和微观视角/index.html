@@ -5,15 +5,15 @@
   
   
   
-    <meta name="description" content="最怕一生碌碌无为，还说平凡难得可贵">
+    <meta name="description" content="业精于勤荒于嬉，行成于思毁于随">
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
     多线程的宏观和微观视角 |
     
-    七英里的旅行</title>
+    码农技术笔记</title>
   
-    <link rel="shortcut icon" href="/source">
+    <link rel="shortcut icon" href="/favicon.ico">
   
   <link rel="stylesheet" href="/css/style.css">
   
@@ -26,76 +26,67 @@
 <main class="content">
   <section class="outer">
   <article id="post-多线程/多线程的宏观和微观视角" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
-  
 
-<!-- 目录内容 -->
+
+    <div class="article-inner">
         
-            
-            <p class="show-toc-btn" id="show-toc-btn" onclick="showToc();" style="display:none">
-            <span class="btn-bg"></span>
-            <span class="btn-text">文章导航</span>
-            </p>
-
-            <div id="toc-article" class="toc-article">
-                <span id="toc-close" class="toc-close" title="隐藏导航" onclick="showBtn();">×</span>
-                <strong class="toc-title">文章目录</strong>
-
-                <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#微观视角"><span class="toc-text">微观视角</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#宏观视角"><span class="toc-text">宏观视角</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#可见性：线程工作空间导致可见性问题"><span class="toc-text">可见性：线程工作空间导致可见性问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#原子性：线程切换导致原子性问题-count"><span class="toc-text">原子性：线程切换导致原子性问题 ++count</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#有序性：指令重排导致有序性问题；"><span class="toc-text">有序性：指令重排导致有序性问题；</span></a></li></ol></li></ol>
-           </div>
-
-           <script type="text/javascript">
-            function showToc(){
-                var toc_article = document.getElementById("toc-article");
-                var show_toc_btn = document.getElementById("show-toc-btn");
-                toc_article.setAttribute("style","display:block");
-                show_toc_btn.setAttribute("style","display:none");
-                };
-            function showBtn(){
-                var toc_article = document.getElementById("toc-article");
-                var show_toc_btn = document.getElementById("show-toc-btn");
-                toc_article.setAttribute("style","display:none");
-                show_toc_btn.setAttribute("style","display:block");
-                };
-           </script>
-             
-        <!-- 目录内容结束 -->
-
-
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
+            <header class="article-header">
+                
   
     <h1 class="article-title" itemprop="name">
       多线程的宏观和微观视角
     </h1>
   
+  
 
-      </header>
-    
 
-    
-      <div class="article-meta">
-        <a href="/2019/02/04/多线程/多线程的宏观和微观视角/" class="article-date">
+
+
+            </header>
+            
+
+
+
+                
+                    <div class="article-meta">
+                        <a href="/2019/02/04/多线程/多线程的宏观和微观视角/" class="article-date">
   <time datetime="2019-02-03T16:00:00.000Z" itemprop="datePublished">2019-02-04</time>
 </a>
-        
+                            
   <div class="article-category">
     <a class="article-category-link" href="/categories/多线程/">多线程</a>
   </div>
 
-      </div>
-    
+                        &emsp;<i class="fe fe-bar-chart"></i> <span class="post-count">1.3k</span>字
+&emsp;<i class="fe fe-clock"></i> <span class="post-count">4</span>分钟
+                    </div>
 
-    <div class="article-entry" itemprop="articleBody">
-      
+                    
 
-      
 
-      
-        <p>首先我们在做并发编程的的时候会考虑到原子性丶可见性和有序性，在宏观上会考虑到安全性丶活跃性和性能；</p>
+
+
+                        
+                            
+    <div class="tocbot"></div>
+
+
+
+
+
+                                
+
+                                    <div class="article-entry" itemprop="articleBody">
+                                        
+
+
+                                            
+
+                                                
+                                                                    <p><span> </span></p>
 <a id="more"></a>
 
+<p>​        首先我们在做并发编程的的时候会考虑到原子性丶可见性和有序性，在宏观上会考虑到安全性丶活跃性和性能；</p>
 <h2 id="微观视角"><a href="#微观视角" class="headerlink" title="微观视角"></a>微观视角</h2><ul>
 <li><strong>可见性</strong>:
 一个线程对共享变量的修改，另外一个线程能够立刻感知到，我们称为可见性;</li>
@@ -118,9 +109,9 @@
 </ul>
 <hr>
 <h3 id="可见性：线程工作空间导致可见性问题"><a href="#可见性：线程工作空间导致可见性问题" class="headerlink" title="可见性：线程工作空间导致可见性问题"></a>可见性：<strong>线程工作空间导致可见性问题</strong></h3><p>&#8195;&#8195;例如：线程A在主存中年将变量age=0拉去到自己的工作内存中，然后做了age = 5，当然这个操作是在cpu的寄存器中进行的，然后写会高速缓存中，这时线程A的高速缓存还未执行同步主内存的操作，线程B又将age=0从主存拉取到了线程B的工作内存中，导致A线程已经更新但是B线程看不到的可见性问题；</p>
-<p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/%E5%85%B1%E4%BA%AB%E5%8F%98%E9%87%8F%E5%8F%AF%E8%A7%81%E6%80%A7.png?raw=true" alt="%E5%85%B1%E4%BA%AB%E5%8F%98%E9%87%8F%E5%8F%AF%E8%A7%81%E6%80%A7.png"></p>
+<p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/%E5%85%B1%E4%BA%AB%E5%8F%98%E9%87%8F%E5%8F%AF%E8%A7%81%E6%80%A7.png?raw=true" alt></p>
 <h3 id="原子性：线程切换导致原子性问题-count"><a href="#原子性：线程切换导致原子性问题-count" class="headerlink" title="原子性：线程切换导致原子性问题 ++count"></a>原子性：<strong>线程切换导致原子性问题 ++count</strong></h3><p>&#8195;&#8195;例如：当线程A从<strong>主内存</strong>中将共享变量Count加载到线程A的<strong>工作内存</strong>后，发生了线程切换，这个时候线程B也将共享变量Count从<strong>主内存</strong>加载到了线程B的<strong>工作内存</strong>，这时<strong>线程A和B的工作内存中count都是0</strong>，线程B执行了Count = Count + 1,然后写回到<strong>主内存</strong>，这时候线程切换完成，回到了线程A再次执行 Count = Count + 1,再将线程A<strong>工作内存计算过</strong>的count写回主内存，现在我们得到的主内存呢中Count值是1而不是2。</p>
-<p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2%E5%AF%BC%E8%87%B4%E5%8E%9F%E5%AD%90%E6%80%A7%E9%97%AE%E9%A2%98++count%20.png?raw=true" alt="%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2%E5%AF%BC%E8%87%B4%E5%8E%9F%E5%AD%90%E6%80%A7%E9%97%AE%E9%A2%98%2B%2Bcount%20.png"></p>
+<p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2%E5%AF%BC%E8%87%B4%E5%8E%9F%E5%AD%90%E6%80%A7%E9%97%AE%E9%A2%98++count%20.png?raw=true" alt></p>
 <h3 id="有序性：指令重排导致有序性问题；"><a href="#有序性：指令重排导致有序性问题；" class="headerlink" title="有序性：指令重排导致有序性问题；"></a>有序性：<strong>指令重排导致有序性问题；</strong></h3><p>在这里讲一个例子，就是获取单例双重检查锁(double-checked locking)判断：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * @Auther: lantao</span><br><span class="line"> * @Date: 2019-03-28 14:32</span><br><span class="line"> * @Company: 随行付支付有限公司</span><br><span class="line"> * @maill: lan_tao@suixingpay.com</span><br><span class="line"> * @Description: TODO</span><br><span class="line"> */</span><br><span class="line">public class Test1 &#123;</span><br><span class="line">    </span><br><span class="line">    private DoMain doMain;</span><br><span class="line">    </span><br><span class="line">    public DoMain getDoMain()&#123;</span><br><span class="line">        if(doMain == null)&#123;</span><br><span class="line">            synchronized (this.getClass())&#123;</span><br><span class="line">                if(doMain == null)&#123;</span><br><span class="line">                    doMain = new DoMain(&quot;&quot;);</span><br><span class="line">                &#125;</span><br><span class="line">                return doMain;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;else&#123;</span><br><span class="line">            return doMain;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -139,130 +130,123 @@
 </ul>
 <p><img src="https://github.com/lantaoGitHub/photos/blob/master/Concurrency/%E6%9C%89%E5%BA%8F%E6%80%A7%E9%97%AE%E9%A2%98.png?raw=true" alt="%E6%9C%89%E5%BA%8F%E6%80%A7%E9%97%AE%E9%A2%98.png"></p>
 
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://www.lantaoblog.site/2019/02/04/多线程/多线程的宏观和微观视角/" data-id="cjzazijs8000emdx46jxcwzjv" class="article-share-link">分享</a>
-      
+                                                                        
+                                    </div>
+                                    <footer class="article-footer">
+
+
+
+
+                                    <img src="/images/ocean/BlogQR.png">
+
+
+
+
+
+
+
+                                        <a data-url="https://www.lantaoblog.site/2019/02/04/多线程/多线程的宏观和微观视角/" data-id="ckgteilnh000q4hx4zpv68y40" class="article-share-link">
+                                            分享
+                                        </a>
+                                        
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/可见性-原子性-有序性/">可见性/原子性/有序性</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/安全性-活跃性-性能/">安全性/活跃性/性能</a></li></ul>
 
-    </footer>
+                                    </footer>
 
-  </div>
+    </div>
 
-  
     
+        
   <nav class="article-nav">
     
-      <a href="/2019/02/04/锁/Synchronized升级过程总结/" class="article-nav-link">
+      <a href="/2019/02/27/Spring源码系列/String源码之XmlBeanFactory/" class="article-nav-link">
         <strong class="article-nav-caption">前一篇</strong>
         <div class="article-nav-title">
           
-            Synchronized升级过程总结
+            Srping源码之XMLBeanFactory
           
         </div>
       </a>
     
     
+      <a href="/2019/02/04/锁/Synchronized升级过程总结/" class="article-nav-link">
+        <strong class="article-nav-caption">后一篇</strong>
+        <div class="article-nav-title">Synchronized升级过程总结</div>
+      </a>
+    
   </nav>
 
 
-  
+            
 
-  
-    
-  <div class="gitalk" id="gitalk-container"></div>
-  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
-  <script type="text/javascript">
-    var gitalk = new Gitalk({
-      clientID: 'eacf3314ff57a55108e0',
-      clientSecret: '267e4903bc9a8d92733ee6f4800a522de70384e1',
-      repo: 'lantaoGitHub.github.io',
-      owner: 'lantaoGitHub',
-      admin: ['lantaoGitHub'],
-      // id: location.pathname,      // Ensure uniqueness and length less than 50
-      id: md5(location.pathname),
-      distractionFreeMode: false,  // Facebook-like distraction free mode
-      pagerDirection: 'last'
-    })
+                
+                    
+    <div class="vcomments" id="vcomments"></div>
+    <script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+        <script>
+            new Valine({
+                el: '#vcomments',
+                appId: 'H7Nh6Kr1FbVOyb1CXa836VCt-gzGzoHsz',
+                appKey: 'St8IaqElFwAgVnPtR5uhga2C',
+                notify: 'false',
+                verify: 'true',
+                avatar: 'mp',
+                pageSize: '10',
+                placeholder: '请输入...'
+            })
+        </script>
+        
+                        
+                            
 
-  gitalk.render('gitalk-container')
-  </script>
 
-  
+
 
 </article>
-
-
-
 </section>
   <footer class="footer">
-  
   <div class="outer">
-    <ul align="center" class="list-inline">
-
-
-
-      
-
-      <li>&copy; 2019 七英里的旅行</li>
-      <li>Author:  <a href="https://lantaogithub.github.io/">兰涛</a></li>
-      <li>Email：lantao0518@sina.com </li>
-      
-<br>
-      <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
-</script>
-
  
-      <ul class="list-inline">
-  
-    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
-  
-</ul>
+    <ul class="list-inline">
+      <li>&copy; 2020 码农技术笔记</li>
+            <li> <span id="timeDate">载入天数...</span><span id="times">载入时分秒...</span>
+<script>
+    var now = new Date(); 
+    function createtime() { 
+        var grt= new Date("04/26/2019 15:49:00");//此处修改你的建站时间或者网站上线时间 
+        now.setTime(now.getTime()+250); 
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days); 
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours); 
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum); 
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;} 
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum); 
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;} 
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 "; 
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒"; 
+    } 
+	setInterval("createtime()",250);
+</script></li>
 
+      <li>全站共<span class="post-count">57.9k</span>字</li>
+            <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
 
-<span id="busuanzi_container_site_pv">
-    本站总访问量<span id="busuanzi_value_site_pv"></span>次
-</span>&nbsp&nbsp&nbsp
-<span id="busuanzi_container_site_uv">
-  本站访客数<span id="busuanzi_value_site_uv"></span>人次
-</span>
-
-
-      <!--
-      <li><a href="/">兰涛</a></li>
-      -->
     </ul>
-
-
-
-
-
-
-
   </div>
-
- 
-
 </footer>
-
 
 </main>
 <aside class="sidebar">
   <button class="navbar-toggle"></button>
-
 <nav class="navbar">
   
     <div class="logo">
-      <a href="/"><img src="/favicon.ico" alt="七英里的旅行"></a>
+      <a href="/"><img src="/images/hexo.svg" alt="码农技术笔记"></a>
     </div>
   
   <ul class="nav nav-main">
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/">主页</a>
+        <a class="nav-item-link" href="/">首页</a>
       </li>
     
       <li class="nav-item">
@@ -274,7 +258,7 @@
       </li>
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/tags">标签云</a>
+        <a class="nav-item-link" href="/tags">标签</a>
       </li>
     
       <li class="nav-item">
@@ -282,21 +266,20 @@
       </li>
     
     <li class="nav-item">
-      <a class="nav-item-link nav-item-search" title="Search">
+      <a class="nav-item-link nav-item-search" title="搜索">
         <i class="fe fe-search"></i>
         搜索
       </a>
     </li>
   </ul>
 </nav>
-
 <nav class="navbar navbar-bottom">
   <ul class="nav">
-      <li class="nav-item">
-          <div class="totop" id="totop">
-    <i class="fe fe-rocket"></i>
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
 </div>
-      </li>
+    </li>
     <li class="nav-item">
       
         <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
@@ -306,7 +289,6 @@
     </li>
   </ul>
 </nav>
-
 <div class="search-form-wrap">
   <div class="local-search local-search-plugin">
   <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
@@ -315,15 +297,28 @@
 </div>
 </aside>
 <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.justifiedGallery.min.js"></script>
 <script src="/js/lazyload.min.js"></script>
 <script src="/js/busuanzi-2.3.pure.min.js"></script>
-
 
   <script src="/fancybox/jquery.fancybox.min.js"></script>
 
 
 
-  <script src="/js/search.js"></script>
+  <script src="/js/tocbot.min.js"></script>
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
 
 
 <script src="/js/ocean.js"></script>

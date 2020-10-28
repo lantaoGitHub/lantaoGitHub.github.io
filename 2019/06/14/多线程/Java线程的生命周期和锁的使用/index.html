@@ -5,15 +5,15 @@
   
   
   
-    <meta name="description" content="最怕一生碌碌无为，还说平凡难得可贵">
+    <meta name="description" content="业精于勤荒于嬉，行成于思毁于随">
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
     Java线程生命周期和锁的简单使用 |
     
-    七英里的旅行</title>
+    码农技术笔记</title>
   
-    <link rel="shortcut icon" href="/source">
+    <link rel="shortcut icon" href="/favicon.ico">
   
   <link rel="stylesheet" href="/css/style.css">
   
@@ -26,76 +26,67 @@
 <main class="content">
   <section class="outer">
   <article id="post-多线程/Java线程的生命周期和锁的使用" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
-  
 
-<!-- 目录内容 -->
+
+    <div class="article-inner">
         
-            
-            <p class="show-toc-btn" id="show-toc-btn" onclick="showToc();" style="display:none">
-            <span class="btn-bg"></span>
-            <span class="btn-text">文章导航</span>
-            </p>
-
-            <div id="toc-article" class="toc-article">
-                <span id="toc-close" class="toc-close" title="隐藏导航" onclick="showBtn();">×</span>
-                <strong class="toc-title">文章目录</strong>
-
-                <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#线程生命周期"><span class="toc-text">线程生命周期</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#初始状态-New"><span class="toc-text">初始状态(New)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#就绪状态-Ready"><span class="toc-text">就绪状态(Ready)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#运行状态-Runable"><span class="toc-text">运行状态(Runable)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#阻塞状态-Blocked"><span class="toc-text">阻塞状态(Blocked)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#等待状态-Waiting"><span class="toc-text">等待状态:(Waiting)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#等待超时状态"><span class="toc-text">等待超时状态</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#终止状态"><span class="toc-text">终止状态</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#配图"><span class="toc-text">配图</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#锁的几个简单方法"><span class="toc-text">锁的几个简单方法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#wait-和-notify-notifyAll"><span class="toc-text">wait 和 notify/notifyAll</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#解释"><span class="toc-text">解释</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#代码"><span class="toc-text">代码</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#await-signal-signalAll"><span class="toc-text">await,signal/signalAll</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#解释-1"><span class="toc-text">解释</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#代码-1"><span class="toc-text">代码</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Join-和-Join-time"><span class="toc-text">Join 和 Join(time)</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#解释-2"><span class="toc-text">解释</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#代码-2"><span class="toc-text">代码</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#yield"><span class="toc-text">yield</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#解释-3"><span class="toc-text">解释</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#代码-3"><span class="toc-text">代码</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#interrupt-和-stop"><span class="toc-text">interrupt 和 stop</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#解释-4"><span class="toc-text">解释</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#代码-4"><span class="toc-text">代码</span></a></li></ol></li></ol></li></ol>
-           </div>
-
-           <script type="text/javascript">
-            function showToc(){
-                var toc_article = document.getElementById("toc-article");
-                var show_toc_btn = document.getElementById("show-toc-btn");
-                toc_article.setAttribute("style","display:block");
-                show_toc_btn.setAttribute("style","display:none");
-                };
-            function showBtn(){
-                var toc_article = document.getElementById("toc-article");
-                var show_toc_btn = document.getElementById("show-toc-btn");
-                toc_article.setAttribute("style","display:none");
-                show_toc_btn.setAttribute("style","display:block");
-                };
-           </script>
-             
-        <!-- 目录内容结束 -->
-
-
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
+            <header class="article-header">
+                
   
     <h1 class="article-title" itemprop="name">
       Java线程生命周期和锁的简单使用
     </h1>
   
+  
 
-      </header>
-    
 
-    
-      <div class="article-meta">
-        <a href="/2019/06/14/多线程/Java线程的生命周期和锁的使用/" class="article-date">
+
+
+            </header>
+            
+
+
+
+                
+                    <div class="article-meta">
+                        <a href="/2019/06/14/多线程/Java线程的生命周期和锁的使用/" class="article-date">
   <time datetime="2019-06-13T16:00:00.000Z" itemprop="datePublished">2019-06-14</time>
 </a>
-        
+                            
   <div class="article-category">
     <a class="article-category-link" href="/categories/多线程/">多线程</a>
   </div>
 
-      </div>
-    
+                        &emsp;<i class="fe fe-bar-chart"></i> <span class="post-count">1.9k</span>字
+&emsp;<i class="fe fe-clock"></i> <span class="post-count">9</span>分钟
+                    </div>
 
-    <div class="article-entry" itemprop="articleBody">
-      
+                    
 
-      
 
-      
-        <p>本文介绍了java线程的生命周期，Synchronized的几个方法简单的使用。</p>
+
+
+                        
+                            
+    <div class="tocbot"></div>
+
+
+
+
+
+                                
+
+                                    <div class="article-entry" itemprop="articleBody">
+                                        
+
+
+                                            
+
+                                                
+                                                                    <p><span> </span></p>
 <a id="more"></a>
 
+<p>​        本文介绍了java线程的生命周期，Synchronized的几个方法简单的使用。</p>
 <h3 id="线程生命周期"><a href="#线程生命周期" class="headerlink" title="线程生命周期"></a>线程生命周期</h3><ul>
 <li><h4 id="初始状态-New"><a href="#初始状态-New" class="headerlink" title="初始状态(New)"></a><strong>初始状态(New)</strong></h4><p>New Thread之后，<br>&nbsp;</p>
 </li>
@@ -140,144 +131,133 @@
 
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">执行结果：</span><br><span class="line"></span><br><span class="line">thread1   开始执行 yield</span><br><span class="line">thread2   开始执行 yield</span><br><span class="line">thread3   开始执行 yield</span><br><span class="line">        trhead2</span><br><span class="line">trhead1</span><br><span class="line">trhead3</span><br></pre></td></tr></table></figure>
 </li>
-<li><h4 id="interrupt-和-stop"><a href="#interrupt-和-stop" class="headerlink" title="interrupt 和 stop"></a><strong>interrupt 和 stop</strong></h4><h5 id="解释-4"><a href="#解释-4" class="headerlink" title="解释"></a><strong>解释</strong></h5><p>interrupt和stop都代表中断线程，区别是 interrupt 会释放资源而stop不会，interrupt也不会立马就中断；说道interrupt就得说一下isInterrupted方法，他是判断线程中断标志的，如果线程A执行了线程B的interrupt方法，线程B在自己的线程中也可以使用 isInterrupted 方法判断自己的中断标志。<br>&nbsp;<br><strong>注意：在使用 interrupt方法时，如果线程在sleep wait wait(time)状态， 抛出InterruptedException异常后会清除 isInterrupted 方法获取的中断标志位，反之则不会</strong></p>
+<li><h4 id="interrupt-和-stop"><a href="#interrupt-和-stop" class="headerlink" title="interrupt 和 stop"></a><strong>interrupt 和 stop</strong></h4><h5 id="解释-4"><a href="#解释-4" class="headerlink" title="解释"></a><strong>解释</strong></h5><p>interrupt和stop都代表中断线程，区别是 interrupt 会释放资源而stop不会，interrupt也不会立马就中断；说到interrupt就得说一下isInterrupted方法，他是判断线程中断标志的，如果线程A执行了线程B的interrupt方法，线程B在自己的线程中也可以使用 isInterrupted 方法判断自己的中断标志。<br>&nbsp;<br><strong>注意：在使用 interrupt方法时，如果线程在sleep wait wait(time)状态， 抛出InterruptedException异常后会清除 isInterrupted 方法获取的中断标志位，反之则不会</strong></p>
 <h5 id="代码-4"><a href="#代码-4" class="headerlink" title="代码"></a><strong>代码</strong></h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Auther</span>: lantao</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: 2019-04-17 17:18</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Company</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@maill</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: 在使用 interrupt方法是，如果线程咋sleep wait wait(time) 在抛出InterruptedException异常后会 清除 isInterrupted 方法获取的标志位 其他则不会</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">        <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">InterruptTest</span> </span>&#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">                Thread thread1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">                    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;&#125;</span><br><span class="line">                &#125;, <span class="string">"循环线程"</span>);</span><br><span class="line"></span><br><span class="line">                Thread thread2 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">                    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            Thread.sleep(<span class="number">200</span>);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                            e.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;, <span class="string">"睡眠线程"</span>);</span><br><span class="line"></span><br><span class="line">                Thread thread3 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">                    Object o = <span class="keyword">new</span> Object();</span><br><span class="line">                    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                        <span class="keyword">synchronized</span> (o)&#123;</span><br><span class="line">                            <span class="keyword">try</span> &#123;</span><br><span class="line">                                o.wait();</span><br><span class="line">                            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                                e.printStackTrace();</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;, <span class="string">"等待线程"</span>);</span><br><span class="line"></span><br><span class="line">                thread1.start();</span><br><span class="line">                thread2.start();</span><br><span class="line">                thread3.start();</span><br><span class="line">                Thread.sleep(<span class="number">500</span>);</span><br><span class="line"></span><br><span class="line">                thread1.interrupt();</span><br><span class="line">                thread2.interrupt();</span><br><span class="line">                thread3.interrupt();</span><br><span class="line">                Thread.sleep(<span class="number">500</span>);</span><br><span class="line">                System.out.println(<span class="string">"循环线程isInteryupt is "</span> + thread1.isInterrupted());</span><br><span class="line">                System.out.println(<span class="string">"睡眠线程isInteryupt is "</span> + thread2.isInterrupted());</span><br><span class="line">                System.out.println(<span class="string">"等待线程isInteryupt is "</span> + thread3.isInterrupted());</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
 
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">执行结果：</span><br><span class="line"></span><br><span class="line">java.lang.InterruptedException: sleep interrupted</span><br><span class="line">at java.lang.Thread.sleep(Native Method)</span><br><span class="line">at com.com.concurrenncy.InterruptTest.lambda$main$<span class="number">1</span>(InterruptTest.java:<span class="number">20</span>)</span><br><span class="line">at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">java.lang.InterruptedException</span><br><span class="line">at java.lang.Object.wait(Native Method)</span><br><span class="line">at java.lang.Object.wait(Object.java:<span class="number">502</span>)</span><br><span class="line">at com.com.concurrenncy.InterruptTest.lambda$main$<span class="number">2</span>(InterruptTest.java:<span class="number">32</span>)</span><br><span class="line">at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">循环线程isInteryupt is <span class="keyword">true</span></span><br><span class="line">睡眠线程isInteryupt is <span class="keyword">false</span></span><br><span class="line">等待线程isInteryupt is <span class="keyword">false</span></span><br></pre></td></tr></table></figure>
 
 
+
 </li>
 </ul>
 
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://www.lantaoblog.site/2019/06/14/多线程/Java线程的生命周期和锁的使用/" data-id="cjzazijs6000cmdx4lrcq8ywf" class="article-share-link">分享</a>
-      
+                                                                        
+                                    </div>
+                                    <footer class="article-footer">
+
+
+
+
+                                    <img src="/images/ocean/BlogQR.png">
+
+
+
+
+
+
+
+                                        <a data-url="https://www.lantaoblog.site/2019/06/14/多线程/Java线程的生命周期和锁的使用/" data-id="ckgteilni000u4hx4d5s7x8hx" class="article-share-link">
+                                            分享
+                                        </a>
+                                        
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/多线程/">多线程</a></li></ul>
 
-    </footer>
+                                    </footer>
 
-  </div>
+    </div>
 
-  
     
+        
   <nav class="article-nav">
     
-      <a href="/2019/06/14/锁/管程含义/" class="article-nav-link">
+      <a href="/2019/06/19/java基础/String的intern方法详解/" class="article-nav-link">
         <strong class="article-nav-caption">前一篇</strong>
         <div class="article-nav-title">
           
-            管程含义
+            String#intern方法详解
           
         </div>
       </a>
     
     
-      <a href="/2019/03/16/Spring源码系列/Spring源码之注解扫描Component-scan/" class="article-nav-link">
+      <a href="/2019/06/14/锁/管程含义/" class="article-nav-link">
         <strong class="article-nav-caption">后一篇</strong>
-        <div class="article-nav-title">Spring源码之注解扫描Component-scan</div>
+        <div class="article-nav-title">管程含义</div>
       </a>
     
   </nav>
 
 
-  
+            
 
-  
-    
-  <div class="gitalk" id="gitalk-container"></div>
-  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
-  <script type="text/javascript">
-    var gitalk = new Gitalk({
-      clientID: 'eacf3314ff57a55108e0',
-      clientSecret: '267e4903bc9a8d92733ee6f4800a522de70384e1',
-      repo: 'lantaoGitHub.github.io',
-      owner: 'lantaoGitHub',
-      admin: ['lantaoGitHub'],
-      // id: location.pathname,      // Ensure uniqueness and length less than 50
-      id: md5(location.pathname),
-      distractionFreeMode: false,  // Facebook-like distraction free mode
-      pagerDirection: 'last'
-    })
+                
+                    
+    <div class="vcomments" id="vcomments"></div>
+    <script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+        <script>
+            new Valine({
+                el: '#vcomments',
+                appId: 'H7Nh6Kr1FbVOyb1CXa836VCt-gzGzoHsz',
+                appKey: 'St8IaqElFwAgVnPtR5uhga2C',
+                notify: 'false',
+                verify: 'true',
+                avatar: 'mp',
+                pageSize: '10',
+                placeholder: '请输入...'
+            })
+        </script>
+        
+                        
+                            
 
-  gitalk.render('gitalk-container')
-  </script>
 
-  
+
 
 </article>
-
-
-
 </section>
   <footer class="footer">
-  
   <div class="outer">
-    <ul align="center" class="list-inline">
-
-
-
-      
-
-      <li>&copy; 2019 七英里的旅行</li>
-      <li>Author:  <a href="https://lantaogithub.github.io/">兰涛</a></li>
-      <li>Email：lantao0518@sina.com </li>
-      
-<br>
-      <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
-</script>
-
  
-      <ul class="list-inline">
-  
-    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
-  
-</ul>
+    <ul class="list-inline">
+      <li>&copy; 2020 码农技术笔记</li>
+            <li> <span id="timeDate">载入天数...</span><span id="times">载入时分秒...</span>
+<script>
+    var now = new Date(); 
+    function createtime() { 
+        var grt= new Date("04/26/2019 15:49:00");//此处修改你的建站时间或者网站上线时间 
+        now.setTime(now.getTime()+250); 
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days); 
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours); 
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum); 
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;} 
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum); 
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;} 
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 "; 
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒"; 
+    } 
+	setInterval("createtime()",250);
+</script></li>
 
+      <li>全站共<span class="post-count">57.9k</span>字</li>
+            <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
 
-<span id="busuanzi_container_site_pv">
-    本站总访问量<span id="busuanzi_value_site_pv"></span>次
-</span>&nbsp&nbsp&nbsp
-<span id="busuanzi_container_site_uv">
-  本站访客数<span id="busuanzi_value_site_uv"></span>人次
-</span>
-
-
-      <!--
-      <li><a href="/">兰涛</a></li>
-      -->
     </ul>
-
-
-
-
-
-
-
   </div>
-
- 
-
 </footer>
-
 
 </main>
 <aside class="sidebar">
   <button class="navbar-toggle"></button>
-
 <nav class="navbar">
   
     <div class="logo">
-      <a href="/"><img src="/favicon.ico" alt="七英里的旅行"></a>
+      <a href="/"><img src="/images/hexo.svg" alt="码农技术笔记"></a>
     </div>
   
   <ul class="nav nav-main">
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/">主页</a>
+        <a class="nav-item-link" href="/">首页</a>
       </li>
     
       <li class="nav-item">
@@ -289,7 +269,7 @@
       </li>
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/tags">标签云</a>
+        <a class="nav-item-link" href="/tags">标签</a>
       </li>
     
       <li class="nav-item">
@@ -297,21 +277,20 @@
       </li>
     
     <li class="nav-item">
-      <a class="nav-item-link nav-item-search" title="Search">
+      <a class="nav-item-link nav-item-search" title="搜索">
         <i class="fe fe-search"></i>
         搜索
       </a>
     </li>
   </ul>
 </nav>
-
 <nav class="navbar navbar-bottom">
   <ul class="nav">
-      <li class="nav-item">
-          <div class="totop" id="totop">
-    <i class="fe fe-rocket"></i>
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
 </div>
-      </li>
+    </li>
     <li class="nav-item">
       
         <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
@@ -321,7 +300,6 @@
     </li>
   </ul>
 </nav>
-
 <div class="search-form-wrap">
   <div class="local-search local-search-plugin">
   <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
@@ -330,15 +308,28 @@
 </div>
 </aside>
 <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.justifiedGallery.min.js"></script>
 <script src="/js/lazyload.min.js"></script>
 <script src="/js/busuanzi-2.3.pure.min.js"></script>
-
 
   <script src="/fancybox/jquery.fancybox.min.js"></script>
 
 
 
-  <script src="/js/search.js"></script>
+  <script src="/js/tocbot.min.js"></script>
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
 
 
 <script src="/js/ocean.js"></script>

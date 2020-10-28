@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+  
+  
+    <meta name="description" content="业精于勤荒于嬉，行成于思毁于随">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    AbstractQueuedSynchronizer源码解析 |
+    
+    码农技术笔记</title>
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+  
+  <script src="/js/pace.min.js"></script>
+</head>
+</html>
+<body>
+<main class="content">
+  <section class="outer">
+  <article id="post-Lock源码系列/AbstractQueuedSynchronizer源码理解" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+
+
+    <div class="article-inner">
+        
+            <header class="article-header">
+                
+  
+    <h1 class="article-title" itemprop="name">
+      AbstractQueuedSynchronizer源码解析
+    </h1>
+  
+  
+
+
+
+
+            </header>
+            
+
+
+
+                
+                    <div class="article-meta">
+                        <a href="/2019/06/24/Lock源码系列/AbstractQueuedSynchronizer源码理解/" class="article-date">
+  <time datetime="2019-06-23T16:00:00.000Z" itemprop="datePublished">2019-06-24</time>
+</a>
+                            
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Lock源码/">Lock源码</a>
+  </div>
+
+                        &emsp;<i class="fe fe-bar-chart"></i> <span class="post-count">6.8k</span>字
+&emsp;<i class="fe fe-clock"></i> <span class="post-count">27</span>分钟
+                    </div>
+
+                    
+
+
+
+
+                        
+                            
+    <div class="tocbot"></div>
+
+
+
+
+
+                                
+
+                                    <div class="article-entry" itemprop="articleBody">
+                                        
+
+
+                                            
+
+                                                
+                                                                    <p><span> </span></p>
+<a id="more"></a>
+
+<p>ReentrantLock,ReentrantReadWriteLock都是基于AQS实现的，下面来解析一下AQS的是先原理</p>
+<p>本文的源码环境是 <code>JDK11</code>。</p>
+<h2 id="AQS是什么"><a href="#AQS是什么" class="headerlink" title="AQS是什么?"></a>AQS是什么?</h2><p><code>AQS</code>是什么，相信大家都不陌生这个题目，那么<code>AQS</code>到底是什么呢？ AQS的全称是 <strong>Abstract Queued Synchronizer</strong>, 从字面意思理解也就是 <strong>抽象队列同步器</strong> ，实际上<code>AQS</code>确实就是<strong>排队同步队列</strong> , 也是一个<strong>抽象</strong>类，需要 <strong>自定义</strong> 同步队列中 <strong>可执行权</strong> 的 <strong>获取和释放中的逻辑(重新定义获取和释放语义)</strong>，也就是重写 <code>tryAcquire</code>  <code>tryRelease</code> <code>tryAcquireShared</code> <code>tryReleaseShared</code> 等方法，当然也可以 <strong>自定义方法</strong> 来通过调用 <code>AQS</code> 提供的 <strong>判断方法进行逻辑判断</strong>。在 <code>JDK9</code> 之前 <code>AQS</code> 是依赖于 <code>CAS</code> 的，其底层是通过 <code>Unsafe</code> 的<code>compareAndSwap*</code> 方法实现同步更改，在之后则是使用 <code>VarHandle</code> , 也替代了 <code>Unsafe</code>。<strong>说白了 AQS 利用 VarHandle 保证操作的原子性</strong>。</p>
+<p><strong>大白话就可以理解为:  表示某件事情同一时间点仅有一人可以进行操作，如有多人则需要排队等待, 等到当前操作人完成后通知下一个人。</strong></p>
+<h2 id="AQS源码解析"><a href="#AQS源码解析" class="headerlink" title="AQS源码解析"></a>AQS源码解析</h2><h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>在源码中 <code>AbstractQueuedSynchronizer</code> 继承了 <code>AbstractOwnableSynchronizer</code> ,  同时也就继承了 <code>exclusiveOwnerThread</code> 属性，也就是 <strong>独占模式同步器的拥有者 ** , 也就意味着</strong>该线程是当前正在执行的线程**。</p>
+<p>在 <code>AQS</code> 中有几个重点方法，分别是:  <code>acquire</code>  <code>acquireInterruptibly</code>  <code>tryAcquireNanos</code>  <code>release</code>  <code>acquireShared</code>  <code>acquireSharedInterruptibly</code>  <code>tryAcquireSharedNanos</code> <code>releaseShared</code> 下面逐一分析。</p>
+<p>在分析源代码之前，先来看一张图来了解一下 <code>AQS排队同步队列</code> 和 <code>Node</code> 节点中的 <code>waitStatus</code> 状态 。</p>
+<p><img src="https://tva1.sinaimg.cn/large/006y8mN6ly1g6fczp6k33j30xk0u0448.jpg" alt></p>
+<p> <code>waitStatus</code> 状态都分为是什么</p>
+<ul>
+<li><strong>CANCELLED</strong>，值为1，代表同步队列中等待的线程 <code>等待超时</code> 或者 <code>被中断</code>，需要从同步队列中剔除，节点进入该状态以后不会再发生变化了。</li>
+<li><strong>SIGNAL</strong>，值为-1，代表后继节点的线程处于等待状态，而如果当前节点的线程如果释放了同步状态或被取消，将会通知后继节点，使后继节点的线程得以运行。</li>
+<li><strong>CONDITION</strong>, 值为-2，节点在等待队列，节点线程等待在Condition上，当其他线程调用Condition的signal方法后，该节点将会从等待队列中转移到同步队列中。</li>
+<li><strong>PROPAGATE</strong>, 值为-3，表示共享式同步状态回去将会无条件的被传播下去，</li>
+<li><strong>INITAL</strong>， 值为0，初始状态。</li>
+</ul>
+<h3 id="acquire-获取"><a href="#acquire-获取" class="headerlink" title="acquire(获取)"></a>acquire(获取)</h3><p>官方解释就是 <strong>Acquires in exclusive mode, ignoring interrupts</strong> <strong>获取独占模式并忽略interrupt(中断)</strong>, 翻译成大白话就是就可以理解为获取<strong>独占模式</strong>, 看一下源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">acquire</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 判断线程是否有可继续执行的权限， 如果没有则创建node 加入到队列中</span></span><br><span class="line">    <span class="keyword">if</span> (!tryAcquire(arg) &amp;&amp; acquireQueued(addWaiter(Node.EXCLUSIVE), arg))</span><br><span class="line">        selfInterrupt();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>acquire</code> 方法中分别调用了 <code>tryAcquire</code>  <code>acquireQueued</code> 和  <code>addWaiter</code> 方法，其中 <code>tryAcquire</code>  方法是需要自定义(重写) 获取、 <strong>执行权限</strong> 的逻辑，这里我们以 <code>AbstractQueuedSynchronizer</code> 的实现 <code>ReentrantLock</code> 为例，简单分析一下，先看  <code>tryAcquire</code>  方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">tryAcquire</span><span class="params">(<span class="keyword">int</span> acquires)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 获取当前线程</span></span><br><span class="line">    <span class="keyword">final</span> Thread current = Thread.currentThread();</span><br><span class="line">    <span class="comment">// 获取当前线程的重入次数 如果是 0 则代表第一次</span></span><br><span class="line">    <span class="keyword">int</span> c = getState();</span><br><span class="line">    <span class="keyword">if</span> (c == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 判断是否存在队列 &amp;&amp; 可以获取到可执行权</span></span><br><span class="line">        <span class="keyword">if</span> (!hasQueuedPredecessors() &amp;&amp; compareAndSetState(<span class="number">0</span>, acquires)) &#123;</span><br><span class="line">            <span class="comment">// 设置独占模式同步器的拥有者 也就是是哪个线程持有</span></span><br><span class="line">            setExclusiveOwnerThread(current);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 如果进入线程是 持有可执行权的线程 则做重入 + 1 操作</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (current == getExclusiveOwnerThread()) &#123;</span><br><span class="line">        <span class="keyword">int</span> nextc = c + acquires;</span><br><span class="line">        <span class="keyword">if</span> (nextc &lt; <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">"Maximum lock count exceeded"</span>);</span><br><span class="line">        setState(nextc);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>tryAcquire</code> 方法核心代码就是 <strong>判断执行权限</strong> ，这里就不具体分析了，会在下一篇文章中进行ReentrantLock的源码分析，接下来重点看 <code>acquireQueued</code> 和 <code>addWaiter</code> 方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Node <span class="title">addWaiter</span><span class="params">(Node mode)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 通过构造方法 新建 Node节点， 根据入参mode指定了 Node的模式，共享或独占</span></span><br><span class="line">  	Node node = <span class="keyword">new</span> Node(mode);</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        Node oldTail = tail;</span><br><span class="line">      	<span class="comment">// 如果 tail 不是 null 则 设置 新建Node的前驱节点(prev) 指向 tail节点 反之 初始化同步队列</span></span><br><span class="line">        <span class="keyword">if</span> (oldTail != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="comment">// 设置 新建Node的前驱节点(prev) 指向 tail节点</span></span><br><span class="line">            node.setPrevRelaxed(oldTail);</span><br><span class="line">          	<span class="comment">// 重新设置 tail 节点 指向 新建的Node节点</span></span><br><span class="line">            <span class="comment">// 白话就是 队列中的最后一个节点 == tail节点</span></span><br><span class="line">            <span class="keyword">if</span> (compareAndSetTail(oldTail, node)) &#123;</span><br><span class="line">                <span class="comment">// 设置 未更改时的 tail节点 中 next 节点， 指向 新建Node节点</span></span><br><span class="line">                oldTail.next = node;</span><br><span class="line">                <span class="keyword">return</span> node;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 初始化同步队列器</span></span><br><span class="line">            initializeSyncQueue();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 如果未存在同步队列 则初始化同步队列</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">initializeSyncQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Node h;</span><br><span class="line">  	<span class="comment">// 设置 AQS head节点 为一个新建节点</span></span><br><span class="line">    <span class="keyword">if</span> (HEAD.compareAndSet(<span class="keyword">this</span>, <span class="keyword">null</span>, (h = <span class="keyword">new</span> Node())))</span><br><span class="line">      	<span class="comment">// 赋值操作</span></span><br><span class="line">        tail = h;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>addWaiter</code> 和  <code>initializeSyncQueue</code> 方法中，核心就是新建 <strong>Node</strong> 节点并通过 <code>acquireQueued</code> 方法将节点加入到 <code>AQS</code> 中，接下来分析一下   <code>addWaiter</code>  具体做了什么</p>
+<ol>
+<li><p>通过构造方法创建新的Node节点，并通过入参 <code>mode</code> 指定Node节点的模式，共享或独占。当然这里是设置的独占模式。</p>
+</li>
+<li><p><strong>循环操作</strong> 新建Node节点并将 <strong>新建节点</strong> 和 <code>tail</code> 节点建立关系。首先判断 <code>tail</code> 是否是null，如果是则 <code>步骤3</code>，反之 <code>步骤4</code></p>
+</li>
+<li><p>如果 <code>tail</code> 节点不为null， 首先将新建的 <code>Node节点</code> 中的 <code>前驱节(prev)</code> 点设置为当前的 <code>tail</code> 节点，然后通过 <code>VarHandle</code> 将 <code>AQS</code> 的 <code>tail</code> 节点改为 <code>新建的Node</code> 节点，如果修改成功则将上一步 未更改时的 <code>tail</code> 节点 <strong>(也就是代码中的oldTail)</strong> 中的 <code>next</code> 指向 <code>新建的Node节点</code> ，反之则可能因为并发操作导致 <code>tial</code> 节点已经被其他线程变更，需要再次循环操作直至成功。</p>
+</li>
+<li><p>如果 <code>tial</code> 节点是null， 则需要实例化同步对列，也就是 <code>AQS</code> , 通过调用 <code>initializeSyncQueue</code> 进行初始化操作，通过 <code>VarHandle</code> 设置 <code>AQS</code> 的 <code>head</code> 指向一个新建节点 <strong>(new Node)</strong> , 然后将 <code>head</code> 节点的<strong>引用</strong>赋值给 <code>tail</code> 节点。<strong>这里注意一下，是将 <code>head</code> 节点的 <code>引用</code> 赋值给 <code>tail</code> 节点, 也就是这时候 <code>head</code> 节点 和 <code>tail</code> 节点是同时指向一块内存地址</strong> , <strong>这里的用意就是在新建队列的时候, <code>head</code> 节点和新建节点的 <code>prev</code> 节点要保持是同一个引用 ，因为在后续的判断中, 获取可执行权的条件就是 <code>AQS</code> 的 <code>head</code> 节点是否等于当前节点的 <code>prev</code> 节点。</strong></p>
+<p>因为 <code>addWaiter</code> 方法中是一个循环，在 创建队列后 需要将队列新建的Node节点做关联，所以还需要在执行一次 <code>步骤3</code></p>
+</li>
+</ol>
+<p><code>addWaiter</code> 方法分析完后，再来看一下 <code>acquireQueued</code> 方法 </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">acquireQueued</span><span class="params">(<span class="keyword">final</span> Node node, <span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 线程中断状态</span></span><br><span class="line">    <span class="keyword">boolean</span> interrupted = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">          	<span class="comment">// 获取通过 addWaiter 创建的Node方法</span></span><br><span class="line">            <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">          	<span class="comment">// 判断 新建的Node节点是否等于head节点 &amp;&amp; 可以获取到 可执行权</span></span><br><span class="line">            <span class="keyword">if</span> (p == head &amp;&amp; tryAcquire(arg)) &#123;</span><br><span class="line">              	<span class="comment">// 设置 head 节点为 当前线程的新建的Node节点，也就是线程被唤醒后并获取到了可执行权，则将head</span></span><br><span class="line">                <span class="comment">// 节点设置为当前线程创建的Node节点，可以保证head节点永远都可以和后续节点有关联关系</span></span><br><span class="line">                setHead(node);</span><br><span class="line">                <span class="comment">// 设置 next </span></span><br><span class="line">                p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                <span class="comment">// 返回</span></span><br><span class="line">                <span class="keyword">return</span> interrupted;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 判断Node节点的线程是否符合被 wait ，在这里用的是 park  </span></span><br><span class="line">            <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node))</span><br><span class="line">                <span class="comment">// 将线程 wait 并且线程被唤醒后 判断线程是否被中断</span></span><br><span class="line">                <span class="comment">// |= 操作等于 interrupted = interrupted | parkAndCheckInterrupt()</span></span><br><span class="line">              	<span class="comment">// |(按位或) 会将 | 两边的值进行二进制计算，运算规则一个为真即为真， 例如 1|1 = 1 或 1|0 = 1，</span></span><br><span class="line">                interrupted |= parkAndCheckInterrupt();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        cancelAcquire(node);</span><br><span class="line">        <span class="keyword">if</span> (interrupted)</span><br><span class="line">            selfInterrupt();</span><br><span class="line">        <span class="keyword">throw</span> t;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>acquireQueued</code> 也是核心方法，在其中会对线程进行 <code>LockSupport.park</code>  进行控制，其实现方式是 <strong>循环</strong> ，下面就具体分析一下</p>
+<ol>
+<li>首先会获取 <code>当前线程</code> 所创建的 <code>Node</code> 节点中的 <code>前置节点(prev)</code> 。</li>
+<li>判断 <code>前置节点(prev)</code> 是否<strong>等于</strong> <code>AQS</code> 的 <code>head</code> 节点 &amp;&amp; 可以获取到 <code>可执行权</code> ，如果这两个条件成立则看 <code>步骤3</code> ，反之看 <code>步骤4</code>,  如果满足这两个条件，也就代表着 <code>head</code> 节点 <code>所对应的线程</code> 已经执行完成并且做了释放<strong>(release方法)</strong>操作。</li>
+<li>如果 <code>步骤2</code> 条件成立，也就是 <strong>线程被唤醒后并获取到了可执行权</strong>，则将 <code>head</code> 节点设置为 <strong>当前线程创建的Node节点</strong> 。</li>
+<li>如果 <code>步骤2</code> 条件不成立，则判断 <code>Node</code>节点所对应的线程的状态是否符合改为 <code>wait</code> 状态。这个逻辑在 <code>shouldParkAfterFailedAcquire</code> 方法中， 接下来看一下。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">shouldParkAfterFailedAcquire</span><span class="params">(Node pred, Node node)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ws = pred.waitStatus;</span><br><span class="line">    <span class="comment">// 如果前置节点的 waitStatus == Signal 也就是 == -1 </span></span><br><span class="line">    <span class="comment">// 如果是 满足 线程 wait 条件</span></span><br><span class="line">    <span class="keyword">if</span> (ws == Node.SIGNAL)</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * This node has already set status asking a release</span></span><br><span class="line"><span class="comment">         * to signal it, so it can safely park.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    <span class="comment">// 如果状态 &gt; 0  也就是1  也就是线程已经被中断了</span></span><br><span class="line">    <span class="comment">// 在这里就会判断 前置节点的前置节点 是否还是被中断，如果是 循环继续判断前置节点， </span></span><br><span class="line">    <span class="comment">// 如果不是 则将前置节点的next节点改为 入参的 node 节点 然后 返回false 继续循环判断 </span></span><br><span class="line">    <span class="comment">// 这里的作用就是 排除掉已经被中断的线程</span></span><br><span class="line">    <span class="keyword">if</span> (ws &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * Predecessor was cancelled. Skip over predecessors and</span></span><br><span class="line"><span class="comment">         * indicate retry.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            node.prev = pred = pred.prev;</span><br><span class="line">        &#125; <span class="keyword">while</span> (pred.waitStatus &gt; <span class="number">0</span>);</span><br><span class="line">        pred.next = node;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * waitStatus must be 0 or PROPAGATE.  Indicate that we</span></span><br><span class="line"><span class="comment">         * need a signal, but don't park yet.  Caller will need to</span></span><br><span class="line"><span class="comment">         * retry to make sure it cannot acquire before parking.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="comment">// 否则设置 状态为 -1 等待唤醒状态 再次进来以后就会被 wait </span></span><br><span class="line">        pred.compareAndSetWaitStatus(ws, Node.SIGNAL);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>shouldParkAfterFailedAcquire</code> 方法中主要就是判断节点所属的线程是否符规则，也就是更改为 <code>wait</code> 状态</p>
+<ol>
+<li>判断<strong>当前线程节点</strong>的<strong>前置节点</strong>的 <code>waitStatus</code> 是否是 SIGNAL，如果是满足条件，返回 <code>true</code>，线程将会 <code>wait</code> 。</li>
+<li>判断<strong>当前线程节点</strong>的<strong>前置节点</strong>的 <code>waitStatus</code> 是否大于 0， 也就是1 ，如果条件成立，则代表 <strong>当前线程节点</strong> 的 <strong>前置节点</strong> 所对应的线程已经被中断了，需要重新指定当前线程节点的前置节点(prev)，通过循环的方式找到前置节点的节点，如果依然被中断，则继续循环，直到找到未中断线程所对应的Node节点为止。如果条件不成立则将 <code>waitStatus</code> 状态改为 <code>SIGNAL</code> 返回false, 再通过 <code>acquireQueued</code> 方法中的循环在执行一次 。</li>
+<li>这里要说一下为什么要更改当前节点的 <code>prev</code> 节点中的 <code>waitStatus</code> 状态，是因为只有 <code>前置节点(prev)</code> 的 <code>waitStatus</code> 等于 <code>SIGNAL 也就是 -1</code> 时，<strong>就代表当前线程新建的Node节点的线程处于等待状态</strong>，<code>在当前节点的前置节点(prev)</code>  的线程释放了同步状态或被取消，将会通知当前节点，使当前节点的线程得以运行</li>
+</ol>
+<p>到这里我们整个的 <code>acquire</code> 方法就解析完了，接下来分享 release，有获取才有释放，会在release讲完后为大家分享一下 acquire 到 release的整个流程。</p>
+<h3 id="release-释放"><a href="#release-释放" class="headerlink" title="release(释放)"></a>release(释放)</h3><p><code>release</code> 字面一次就是释放，释放通过 <code>acquire</code> 获取的独占模式，可以让 <code>AQS</code> 后续节点所对应的线程可以得到执行权，下面就看一下 release 方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">release</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 步骤 1 2 3 </span></span><br><span class="line">    <span class="keyword">if</span> (tryRelease(arg)) &#123;</span><br><span class="line">        Node h = head;</span><br><span class="line">        <span class="keyword">if</span> (h != <span class="keyword">null</span> &amp;&amp; h.waitStatus != <span class="number">0</span>)</span><br><span class="line">            unparkSuccessor(h);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>release</code> 方法中首先会调用  <code>tryRelease</code> 方法，这里 <code>tryRelease</code> 方法将会有子类实现，先以 <code>RenntrantLook</code> 为例，这里就不展示代码了，就简单描述一下逻辑</p>
+<ol>
+<li>首先会先用 <code>state</code> 减去 <code>arg</code>，<code>state</code> 代表重入次数。</li>
+<li>如果 <code>步骤1</code> 结果是0，则将 <strong>独占模式同步器的拥有者</strong> 改为null并返回true。</li>
+<li>如果 <code>步骤1</code> 结果不是0， 则重新设置 state，返回false，表示还不可以释放。</li>
+</ol>
+<p>接下来判断 <code>AQS</code> 的 <code>head</code> 节点不是null并且 <code>waitStatus</code> 状态不等于0，代表 <strong>释放成功</strong>，然后进入 unparkSuccessor 方法，进行对下一个Node节点所对应的线程进行唤醒操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">unparkSuccessor</span><span class="params">(Node node)</span> </span>&#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * If status is negative (i.e., possibly needing signal) try</span></span><br><span class="line"><span class="comment">     * to clear in anticipation of signalling.  It is OK if this</span></span><br><span class="line"><span class="comment">     * fails or if status is changed by waiting thread.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="comment">// 如果head的waitStatus&lt;0 则将head的waitStatus改为0</span></span><br><span class="line">    <span class="keyword">int</span> ws = node.waitStatus;</span><br><span class="line">    <span class="keyword">if</span> (ws &lt; <span class="number">0</span>)</span><br><span class="line">        node.compareAndSetWaitStatus(ws, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Thread to unpark is held in successor, which is normally</span></span><br><span class="line"><span class="comment">     * just the next node.  But if cancelled or apparently null,</span></span><br><span class="line"><span class="comment">     * traverse backwards from tail to find the actual</span></span><br><span class="line"><span class="comment">     * non-cancelled successor.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="comment">// 如果 head 节点的 next 节点 == null 或者 节点 的状态 大于0 也就是1 也就是 下一个节点所对应的线程被中断了</span></span><br><span class="line">    Node s = node.next;</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="keyword">null</span> || s.waitStatus &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        s = <span class="keyword">null</span>;</span><br><span class="line">        <span class="comment">// 将会循环整个同步队列，从tail节点开始 往前循环，直到只找到 waitStatus &lt;= 0 的Node节点</span></span><br><span class="line">        <span class="keyword">for</span> (Node p = tail; p != node &amp;&amp; p != <span class="keyword">null</span>; p = p.prev)</span><br><span class="line">            <span class="keyword">if</span> (p.waitStatus &lt;= <span class="number">0</span>)</span><br><span class="line">                s = p;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 如果节点不是 null 则唤醒该节点的线程</span></span><br><span class="line">    <span class="keyword">if</span> (s != <span class="keyword">null</span>)</span><br><span class="line">        LockSupport.unpark(s.thread);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来分析一下在 unparkSuccessor 方法中都做了什么</p>
+<ol>
+<li>首先如果 head 的 <code>waitStatus</code> &lt;0， 则将 <code>head</code> 的 <code>waitStatus</code> 改为0。</li>
+<li>如果 <code>head</code> 节点的 <code>next</code> 节点等于null 或者 <code>waitStatus</code> 状态 大于0也就是1， 表示 <code>head</code> 节点所对应的 <code>next</code> 节点所对应的线程已经被中断了，将会循环整个同步队列，从 <code>tail</code> 节点开始往前循环，直到找到<strong>最前面的一个 waitStatus &lt;= 0 的Node节点</strong>。</li>
+<li>如果 <code>步骤2</code> 条件不满足 则代表 head 的 next 节点不是null 或  waitStatus状态不等于1，调用 <code>unpark</code> 方法唤醒线程。</li>
+</ol>
+<p>至此 <code>release</code> 方法就解析完成了，很简单，核心功能仅仅是如果符合规则，则调用 <code>unpark</code> 方法唤醒 <code>AQS</code> 队列中下一个节点所对应的线程。下面就分析一下 acquire 和 releae 整个流程。</p>
+<h3 id="总结-acquire-和-release"><a href="#总结-acquire-和-release" class="headerlink" title="总结 acquire 和 release"></a>总结 acquire 和 release</h3><h4 id="分析一次-acquire-和-release-的整体流程"><a href="#分析一次-acquire-和-release-的整体流程" class="headerlink" title="分析一次 acquire 和 release 的整体流程"></a>分析一次 <code>acquire</code> 和 <code>release</code> 的整体流程</h4><p><img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/%E4%B8%80%E6%AC%A1acquire%E5%92%8Crelease.png" alt></p>
+<p>接下来分析 <code>acquireInterruptibly</code>  方法，<code>acquireInterruptibly</code> 方法和 <code>acquire</code> 其实是一样的，只不过多判断了一下是否被中断。</p>
+<h3 id="acquireInterruptibly"><a href="#acquireInterruptibly" class="headerlink" title="acquireInterruptibly"></a>acquireInterruptibly</h3><p><code>acquireInterruptibly</code>  方法就是 <strong>可中断的获取可执行权</strong> ，具体流程和 <code>acquire</code> 相似。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">acquireInterruptibly</span><span class="params">(<span class="keyword">int</span> arg)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (Thread.interrupted())</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">    <span class="keyword">if</span> (!tryAcquire(arg))</span><br><span class="line">        doAcquireInterruptibly(arg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>acquireInterruptibly</code> 方法中，首先会通过 <code>Thread.interrupted()</code> 方法判断线程是否被中断，如已经被中断，则抛出 <code>InterruptedException</code>， 反之则调用 <code>tryAcquire</code> 方法，判断是否 <strong>获取到执行权</strong>，如果未获取到则调用 <code>doAcquireInterruptibly</code> 方法进行创建 <code>AQS</code> 和 <code>新的Node节点</code>，并将 <code>新建的Node节点</code> 和 <code>AQS</code>  的 <code>head</code> 节点进行关联。 到这里可能就会想到，这不是和 <code>acquire</code> 方法是一样的嘛，没错，就是一样。看一下源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doAcquireInterruptibly</span><span class="params">(<span class="keyword">int</span> arg)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="comment">// 新建 Node 节点 并将节点 和 AQS 队列建立关联</span></span><br><span class="line">    <span class="keyword">final</span> Node node = addWaiter(Node.EXCLUSIVE);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">            <span class="keyword">if</span> (p == head &amp;&amp; tryAcquire(arg)) &#123;</span><br><span class="line">                setHead(node);</span><br><span class="line">                p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node) &amp;&amp;</span><br><span class="line">                parkAndCheckInterrupt())</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        cancelAcquire(node);</span><br><span class="line">        <span class="keyword">throw</span> t;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看到源码是不是很熟悉，这不就是上边我们分析过的 <code>acquire</code> 方法嘛，唯一和 <code>acquire</code> 方法不同的就是，如果线程在被唤醒以后，也就是 <code>head</code> 节点的线程调用了 <code>release</code> 释放了可执行权，并且通过 <code>LockSupport.park</code> 方法唤醒了 head 的 next节点所属的线程时，<code>head</code> 的 <code>next</code> 节点所属的线程已经被中断了就会抛出 <code>InterruptedException</code> 异常。</p>
+<p>这里就不进行 addWaiter 方法 和  parkAndCheckInterrupt 方法的源码展示了，如果还不明白就看一下上边 <code>acquire</code> 方法的源码分析。</p>
+<h3 id="tryAcquireNanos"><a href="#tryAcquireNanos" class="headerlink" title="tryAcquireNanos"></a>tryAcquireNanos</h3><p><code>tryAcquireNanos</code> 方法的含义就是 <strong>可超时的获取执行权</strong> ，如果设置的 <strong>超时时间</strong> 到了，还未获取到可执行权，则直接返回 <strong>false</strong> 。这里的超时时间单位是 <code>纳秒 ns</code>  ， <strong>1秒(s)=1000000000纳秒(ns)</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">tryAcquireNanos</span><span class="params">(<span class="keyword">int</span> arg, <span class="keyword">long</span> nanosTimeout)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (Thread.interrupted())</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">    <span class="keyword">return</span> tryAcquire(arg) ||</span><br><span class="line">        doAcquireNanos(arg, nanosTimeout);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看到 <code>tryAcquireNanos</code> 方法会想到什么？ 看到方法上的 <code>throws InterruptedException</code>  就一下想到了上面刚刚刚说的 <code>acquireInterruptibly</code> 方法，<strong>支持可中断的获取执行权</strong>。首先这里会先调用 <code>tryAcquire</code> 方法获取执行权，如果可以获取到执行权则直接返回，反之则调用 <code>doAcquireNanos(arg, nanosTimeout)</code> 方法进行 <code>新建 Node 节点</code> 并和 <code>AQS</code> 的 <code>head</code> 节点进行关联，<strong>并且会将节点加入到 AQS的队列中</strong>，<strong>然后将节点所属的线程放入等待队列中</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">doAcquireNanos</span><span class="params">(<span class="keyword">int</span> arg, <span class="keyword">long</span> nanosTimeout)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">  <span class="comment">// 判断超时时间 是否小于等于 0 如果这 则直接返回 false  </span></span><br><span class="line">  <span class="keyword">if</span> (nanosTimeout &lt;= <span class="number">0L</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    <span class="comment">// 使用当前时间的 纳秒 + 超时时间的纳秒 =  未来超时的超时时间，用来做parkNanos, </span></span><br><span class="line">    <span class="comment">// 就相当于 Object.wait(long timeoutMillis) 方法</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> deadline = System.nanoTime() + nanosTimeout;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">//通过构造方法 新建 Node节点， 根据入参mode指定了 Node的模式，共享或独占</span></span><br><span class="line">    <span class="keyword">final</span> Node node = addWaiter(Node.EXCLUSIVE);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            <span class="comment">// 判断 新建的Node节点是否等于head节点 &amp;&amp; 可以获取到'可执行权'</span></span><br><span class="line">            <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">            <span class="keyword">if</span> (p == head &amp;&amp; tryAcquire(arg)) &#123;</span><br><span class="line">                <span class="comment">// 设置 head 节点为 当前线程的新建的Node节点，也就是线程被唤醒后并获取到了可执行权，则将head</span></span><br><span class="line">                <span class="comment">// 节点设置为当前线程创建的Node节点，可以保证head节点永远都可以和后续节点有关联关系</span></span><br><span class="line">                setHead(node);</span><br><span class="line">                p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 判断计算过的 deadline 时间 - 当前时间 是否小于0 是则 超时时间已过，返回false</span></span><br><span class="line">            nanosTimeout = deadline - System.nanoTime();</span><br><span class="line">            <span class="keyword">if</span> (nanosTimeout &lt;= <span class="number">0L</span>) &#123;</span><br><span class="line">                cancelAcquire(node);</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 判断Node节点的线程是否符合被 wait ，在这里用的是 park  并且 纳秒必须大于 1000 </span></span><br><span class="line">            <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node) &amp;&amp;</span><br><span class="line">                nanosTimeout &gt; SPIN_FOR_TIMEOUT_THRESHOLD)</span><br><span class="line">                LockSupport.parkNanos(<span class="keyword">this</span>, nanosTimeout);</span><br><span class="line">            <span class="comment">// 判断线程是否被中断 如果中断则抛出 InterruptedException 异常</span></span><br><span class="line">            <span class="keyword">if</span> (Thread.interrupted())</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        cancelAcquire(node);</span><br><span class="line">        <span class="keyword">throw</span> t;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果在 <code>acquire</code> 和 <code>release</code> 分析中理解其中原理是不是觉得这里很简单，这里也不列举已经分析过的方法了，直接说出不同点</p>
+<ol>
+<li>增加超时时间，在这里使用了  <code>LockSupport.parkNanos(this, nanosTimeout)</code> 方法，也就相当于 <code>Object.wait(long timeoutMillis)</code> 方法，等待的线程的状态会在超时时间失效从 <code>wait</code> 变为 <code>run</code></li>
+<li>线程被唤醒以后,也就是过了超时时间则会判断计算过的 <code>deadline时间</code> - <code>当前时间</code> 是否小于0, 若果是则代表超时时间已过，直接返回false，反之则继续执行。</li>
+<li>支持中断 ，如果已中断则会抛出 <code>InterruptedException</code> 异常。</li>
+</ol>
+<p>是不是很简单，读者要把重点放到 <code>acquire</code> 和 <code>release</code> 上，其他的就很容易了。上面的内容均是获取的独占模式，下面来讲解一下 共享模式。</p>
+<h3 id="acquireShared"><a href="#acquireShared" class="headerlink" title="acquireShared"></a>acquireShared</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">acquireShared</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 通过调用 tryAcquireShared 方法获取可执行权，如果未获取到则调用 doAcquireShared</span></span><br><span class="line">    <span class="comment">// 方法进行 新建 Node节点 并和 AQS的 head 节点建立关系，</span></span><br><span class="line">    <span class="keyword">if</span> (tryAcquireShared(arg) &lt; <span class="number">0</span>)</span><br><span class="line">        doAcquireShared(arg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过 <code>acquireShared</code> 方法可以看到和 <code>acquire</code> 并没有什么区别，获取可执行权的代码需要 <code>自定义同步器</code> 实现，在共享模式分析中就不对 <code>ReentrantReadWriteLock</code> 源码进行分析了 ，会在后面对 <code>ReentrantLock</code> 和 <code>ReentrantReadWriteLock</code> 进行源码分析，接下来看一下 <code>doAcquireShared</code> ，看它是不是和  <code>acquireQueued</code> 方法也是一样的逻辑呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doAcquireShared</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">  	<span class="comment">// 获取通过 addWaiter 创建的Node方法</span></span><br><span class="line">    <span class="keyword">final</span> Node node = addWaiter(Node.SHARED);</span><br><span class="line">    <span class="keyword">boolean</span> interrupted = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            <span class="comment">// 获取新建节点的前置节点</span></span><br><span class="line">            <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">         	  <span class="comment">// 判断 新建的Node节点是否等于head节点</span></span><br><span class="line">            <span class="keyword">if</span> (p == head) &#123;</span><br><span class="line">                <span class="comment">// 如果上边的 p==head 需要在此判断是否可以获取到'可执行权'</span></span><br><span class="line">                <span class="keyword">int</span> r = tryAcquireShared(arg);</span><br><span class="line">                <span class="keyword">if</span> (r &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">                  	<span class="comment">// 如果获取到了可执行权</span></span><br><span class="line">                    setHeadAndPropagate(node, r);</span><br><span class="line">                    p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 判断Node节点的线程是否符合被 wait ，在这里用的是 park  </span></span><br><span class="line">            <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node))</span><br><span class="line">                <span class="comment">// 将线程 wait 并且线程被唤醒后 判断线程是否被中断</span></span><br><span class="line">                interrupted |= parkAndCheckInterrupt();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        cancelAcquire(node);</span><br><span class="line">        <span class="keyword">throw</span> t;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (interrupted)</span><br><span class="line">            selfInterrupt();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>doAcquireShared</code> 方法中，我们看到，首先依然是调用 <code>addWaiter</code> 方法进行新建Node，这里就不多说，可以看一下上边的方法详解，<code>doAcquireShared</code> 也是核心方法，在其中会对线程进行 <code>LockSupport.park</code>  进行控制，其实现方式是 <strong>循环</strong> ，下面就具体分析一下</p>
+<ol>
+<li>首先会获取 <code>当前线程</code> 所创建的 <code>Node</code> 节点中的 <code>前置节点(prev)</code> 。</li>
+<li>判断 <code>前置节点(prev)</code> 是否<strong>等于</strong> <code>AQS</code> 的 <code>head</code> 节点，如果条件成立则看 <code>步骤3</code> ，反之看 <code>步骤4</code>,  如果满足条件，也就代表着 <code>head</code> 节点 <code>所对应的线程</code> 已经执行完成并且做了释放<strong>(release方法)</strong>操作。</li>
+<li>如果 <code>步骤2</code> 条件成立，则再次判断 <strong>当前线程是否可以获取到可执行权</strong> ，如果可以则设置 <code>AQS</code> 的 <code>head</code> 节点为当前线程的 <code>新建的Node节点</code>, 反之则看 <code>步骤3</code>。</li>
+<li>如果 <code>步骤2</code> 或 <code>步骤3</code> 条件不成立，则判断 <code>Node</code>节点所对应的线程的状态是否符合改为 <code>wait</code> 状态,也就是是否可以加入到等待队列中。这个逻辑在 <code>shouldParkAfterFailedAcquire</code> 方法中，可以看一下上边的方法详解。</li>
+</ol>
+<h3 id="acquireSharedInterruptibly"><a href="#acquireSharedInterruptibly" class="headerlink" title="acquireSharedInterruptibly"></a>acquireSharedInterruptibly</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">acquireSharedInterruptibly</span><span class="params">(<span class="keyword">int</span> arg)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (Thread.interrupted())</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">    <span class="keyword">if</span> (tryAcquireShared(arg) &lt; <span class="number">0</span>)</span><br><span class="line">        doAcquireSharedInterruptibly(arg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doAcquireSharedInterruptibly</span><span class="params">(<span class="keyword">int</span> arg)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">  	<span class="comment">// 获取通过 addWaiter 创建的Node方法</span></span><br><span class="line">    <span class="keyword">final</span> Node node = addWaiter(Node.SHARED);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            <span class="comment">// 获取新建节点的前置节点</span></span><br><span class="line">            <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">            <span class="comment">// 判断 新建的Node节点是否等于head节点</span></span><br><span class="line">            <span class="keyword">if</span> (p == head) &#123;</span><br><span class="line">                <span class="comment">// 如果获取到了可执行权</span></span><br><span class="line">                <span class="keyword">int</span> r = tryAcquireShared(arg);</span><br><span class="line">                <span class="keyword">if</span> (r &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">                    setHeadAndPropagate(node, r);</span><br><span class="line">                    p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 判断Node节点的线程是否符合被 wait &amp;&amp; 将线程 wait 并且线程被唤醒后判断线程是否被中断</span></span><br><span class="line">            <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node) &amp;&amp;</span><br><span class="line">                parkAndCheckInterrupt())</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        cancelAcquire(node);</span><br><span class="line">        <span class="keyword">throw</span> t;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到 <code>acquireSharedInterruptibly</code> 和 <code>acquireShared</code> 方法并没有什么太大区别，唯一的区别就是在调用 <code>parkAndCheckInterrupt</code> 线程状态被 wait ，等到当前节点 <code>prev</code> 节点的所属线程调用了 <code>release</code> 方法后，唤醒当前节点所属线程时，如果当前线程被中断了会抛出 <code>InterruptedException</code> 异常。</p>
+<h3 id="tryAcquireSharedNanos"><a href="#tryAcquireSharedNanos" class="headerlink" title="tryAcquireSharedNanos"></a>tryAcquireSharedNanos</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">tryAcquireSharedNanos</span><span class="params">(<span class="keyword">int</span> arg, <span class="keyword">long</span> nanosTimeout)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (Thread.interrupted())</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">    <span class="keyword">return</span> tryAcquireShared(arg) &gt;= <span class="number">0</span> ||</span><br><span class="line">        doAcquireSharedNanos(arg, nanosTimeout);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">doAcquireSharedNanos</span><span class="params">(<span class="keyword">int</span> arg, <span class="keyword">long</span> nanosTimeout)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="comment">// 如果超时时间 小于等于0 则直接 返回失败</span></span><br><span class="line">    <span class="keyword">if</span> (nanosTimeout &lt;= <span class="number">0L</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    <span class="comment">// 使用当前时间的 纳秒 + 超时时间的纳秒 =  未来超时的超时时间，用来做parkNanos, </span></span><br><span class="line">    <span class="comment">// 就相当于 Object.wait(long timeoutMillis) 方法</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> deadline = System.nanoTime() + nanosTimeout;</span><br><span class="line">  	</span><br><span class="line">    <span class="comment">//通过构造方法 新建 Node节点， 根据入参mode指定了 Node的模式，共享或独占。这里是共享</span></span><br><span class="line">    <span class="keyword">final</span> Node node = addWaiter(Node.SHARED);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            <span class="comment">// 判断 新建的Node节点是否等于head节点</span></span><br><span class="line">            <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">            <span class="keyword">if</span> (p == head) &#123;</span><br><span class="line">                <span class="comment">// 是否可以获得可执行权</span></span><br><span class="line">                <span class="keyword">int</span> r = tryAcquireShared(arg);</span><br><span class="line">                <span class="keyword">if</span> (r &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">                    setHeadAndPropagate(node, r);</span><br><span class="line">                    p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">          </span><br><span class="line">            <span class="comment">// 判断计算过的 deadline 时间 - 当前时间 是否小于或等于0 是则超时时间已过，返回false</span></span><br><span class="line">            nanosTimeout = deadline - System.nanoTime();</span><br><span class="line">            <span class="keyword">if</span> (nanosTimeout &lt;= <span class="number">0L</span>) &#123;</span><br><span class="line">                cancelAcquire(node);</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 判断Node节点的线程是否符合被 wait ，在这里用的是 park  并且 纳秒必须大于 1000 </span></span><br><span class="line">            <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node) &amp;&amp;</span><br><span class="line">                nanosTimeout &gt; SPIN_FOR_TIMEOUT_THRESHOLD)</span><br><span class="line">                LockSupport.parkNanos(<span class="keyword">this</span>, nanosTimeout);</span><br><span class="line">          	<span class="comment">// // 判断线程是否被中断 如果中断则抛出 InterruptedException 异常</span></span><br><span class="line">            <span class="keyword">if</span> (Thread.interrupted())</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        cancelAcquire(node);</span><br><span class="line">        <span class="keyword">throw</span> t;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>有没有发现，<code>doAcquireSharedNanos</code> 方法和 <code>doAcquireNanos</code> 方法很相似呢，如果在 <code>acquireShared</code>  分析中理解其原理是不是觉得这里很简单，这里也不列举已经分析过的方法了，直接说出不同点</p>
+<ol>
+<li>增加超时时间，在这里使用了  <code>LockSupport.parkNanos(this, nanosTimeout)</code> 方法，也就相当于 <code>Object.wait(long timeoutMillis)</code> 方法，等待的线程的状态会在超时时间失效从 <code>wait</code> 变为 <code>run</code></li>
+<li>线程被唤醒以后,也就是过了超时时间则会判断计算过的 <code>deadline时间</code> - <code>当前时间</code> 是否小于0, 若果是则代表超时时间已过，直接返回false，反之则继续执行。</li>
+<li>支持中断 ，如果已中断则会抛出 <code>InterruptedException</code> 异常。</li>
+</ol>
+<p>是不是很简单，读者要把重点放到 <code>acquire</code> 和 <code>acquireShared</code> 上，其他的就很容易了。</p>
+<h3 id="releaseShared"><a href="#releaseShared" class="headerlink" title="releaseShared"></a>releaseShared</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">releaseShared</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (tryReleaseShared(arg)) &#123;</span><br><span class="line">        doReleaseShared();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doReleaseShared</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Ensure that a release propagates, even if there are other</span></span><br><span class="line"><span class="comment">     * in-progress acquires/releases.  This proceeds in the usual</span></span><br><span class="line"><span class="comment">     * way of trying to unparkSuccessor of head if it needs</span></span><br><span class="line"><span class="comment">     * signal. But if it does not, status is set to PROPAGATE to</span></span><br><span class="line"><span class="comment">     * ensure that upon release, propagation continues.</span></span><br><span class="line"><span class="comment">     * Additionally, we must loop in case a new node is added</span></span><br><span class="line"><span class="comment">     * while we are doing this. Also, unlike other uses of</span></span><br><span class="line"><span class="comment">     * unparkSuccessor, we need to know if CAS to reset status</span></span><br><span class="line"><span class="comment">     * fails, if so rechecking.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        Node h = head;</span><br><span class="line">        <span class="keyword">if</span> (h != <span class="keyword">null</span> &amp;&amp; h != tail) &#123;</span><br><span class="line">            <span class="keyword">int</span> ws = h.waitStatus;</span><br><span class="line">            <span class="keyword">if</span> (ws == Node.SIGNAL) &#123;</span><br><span class="line">                <span class="comment">// 如果更新失败则循环</span></span><br><span class="line">                <span class="keyword">if</span> (!h.compareAndSetWaitStatus(Node.SIGNAL, <span class="number">0</span>))</span><br><span class="line">                    <span class="keyword">continue</span>;            <span class="comment">// loop to recheck cases</span></span><br><span class="line">                <span class="comment">// 唤醒 head 节点的 next 节点所属的线程</span></span><br><span class="line">                unparkSuccessor(h);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 如果更新失败则循环</span></span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (ws == <span class="number">0</span> &amp;&amp;</span><br><span class="line">                     !h.compareAndSetWaitStatus(<span class="number">0</span>, Node.PROPAGATE))</span><br><span class="line">                <span class="keyword">continue</span>;                <span class="comment">// loop on failed CAS</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 如果 head 改变了则再次循环</span></span><br><span class="line">        <span class="keyword">if</span> (h == head)                   <span class="comment">// loop if head changed</span></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>tryReleaseShared 方法和 release 方法稍微有一点区别，下面我们就具体分析一下</p>
+<ol>
+<li>首先去尝试释放资源通过 <code>tryReleaseShared</code> 方法，如果释放成功了，就代表有资源空闲出来，那么就看 <strong>步骤2</strong></li>
+<li>调用<code>doReleaseShared</code> 去唤醒后续结点,  在 <code>doReleaseShared</code> 方法中采用了 <code>loop</code>，每一次循环的过程都是首先获得 <code>head</code> 节点，如果 <code>head</code> 结点不为空且不等于 <code>tail</code> 结点，那么先获得该节点的状态，如果是SIGNAL的状态，则代表它需要有后继结点去唤醒，首先将其的状态变为0(初始状态)，然后通过 <code>unparkSuccessor</code> 方法唤醒后续节点所属的线程，如果结点状态一开始就是0，那么就给他转换成 <strong>PROPAGATE</strong> 状态，保证在后续获取资源的时候，还能够向后面传播。</li>
+</ol>
+<p>至此我们已经分析完了 <strong>AbstractQueuedSynchronizer</strong> 的源码，是不是很简单呢？最主要的还是要理解AQS的整体流程，说白了AQS是依赖两大利器，也就是 VarHandle 和 LockSupport。</p>
+
+                                                                        
+                                    </div>
+                                    <footer class="article-footer">
+
+
+
+
+                                    <img src="/images/ocean/BlogQR.png">
+
+
+
+
+
+
+
+                                        <a data-url="https://www.lantaoblog.site/2019/06/24/Lock源码系列/AbstractQueuedSynchronizer源码理解/" data-id="ckgteiln800084hx4mjs0ldeg" class="article-share-link">
+                                            分享
+                                        </a>
+                                        
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Lock源码/">Lock源码</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/多线程/">多线程</a></li></ul>
+
+                                    </footer>
+
+    </div>
+
+    
+        
+  <nav class="article-nav">
+    
+      <a href="/2019/07/18/SpringBoot/SrpingBoot自动装配/" class="article-nav-link">
+        <strong class="article-nav-caption">前一篇</strong>
+        <div class="article-nav-title">
+          
+            Sring Boot 自动装配
+          
+        </div>
+      </a>
+    
+    
+      <a href="/2019/06/21/数据结构学习笔记/数组/" class="article-nav-link">
+        <strong class="article-nav-caption">后一篇</strong>
+        <div class="article-nav-title">数组</div>
+      </a>
+    
+  </nav>
+
+
+            
+
+                
+                    
+    <div class="vcomments" id="vcomments"></div>
+    <script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+        <script>
+            new Valine({
+                el: '#vcomments',
+                appId: 'H7Nh6Kr1FbVOyb1CXa836VCt-gzGzoHsz',
+                appKey: 'St8IaqElFwAgVnPtR5uhga2C',
+                notify: 'false',
+                verify: 'true',
+                avatar: 'mp',
+                pageSize: '10',
+                placeholder: '请输入...'
+            })
+        </script>
+        
+                        
+                            
+
+
+
+
+</article>
+</section>
+  <footer class="footer">
+  <div class="outer">
+ 
+    <ul class="list-inline">
+      <li>&copy; 2020 码农技术笔记</li>
+            <li> <span id="timeDate">载入天数...</span><span id="times">载入时分秒...</span>
+<script>
+    var now = new Date(); 
+    function createtime() { 
+        var grt= new Date("04/26/2019 15:49:00");//此处修改你的建站时间或者网站上线时间 
+        now.setTime(now.getTime()+250); 
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days); 
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours); 
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum); 
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;} 
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum); 
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;} 
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 "; 
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒"; 
+    } 
+	setInterval("createtime()",250);
+</script></li>
+
+      <li>全站共<span class="post-count">57.9k</span>字</li>
+            <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+
+    </ul>
+  </div>
+</footer>
+
+</main>
+<aside class="sidebar">
+  <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+    <div class="logo">
+      <a href="/"><img src="/images/hexo.svg" alt="码农技术笔记"></a>
+    </div>
+  
+  <ul class="nav nav-main">
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/">首页</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/archives">归档</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/categories">分类</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/tags">标签</a>
+      </li>
+    
+      <li class="nav-item">
+        <a class="nav-item-link" href="/about">关于</a>
+      </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="搜索">
+        <i class="fe fe-search"></i>
+        搜索
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+        <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+          <i class="fe fe-feed"></i>
+        </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+</aside>
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+<script src="/js/lazyload.min.js"></script>
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+  <script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+  <script src="/js/tocbot.min.js"></script>
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+</html>

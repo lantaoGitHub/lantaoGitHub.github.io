@@ -1,3 +1,4 @@
+@charset "utf-8";
 html,
 body,
 div,
@@ -37,4 +38,9 @@ figure.forrestgump figcaption {
     width: 60%;
     padding: 0 2rem;
   }
+}
+.notfound-link {
+  position: absolute;
+  z-index: 9;
+  margin-top: 2rem;
 }

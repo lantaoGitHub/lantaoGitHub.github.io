@@ -5,15 +5,15 @@
   
   
   
-    <meta name="description" content="最怕一生碌碌无为，还说平凡难得可贵">
+    <meta name="description" content="业精于勤荒于嬉，行成于思毁于随">
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
     Spring源码之ApplicationContext |
     
-    七英里的旅行</title>
+    码农技术笔记</title>
   
-    <link rel="shortcut icon" href="/source">
+    <link rel="shortcut icon" href="/favicon.ico">
   
   <link rel="stylesheet" href="/css/style.css">
   
@@ -26,77 +26,65 @@
 <main class="content">
   <section class="outer">
   <article id="post-Spring源码系列/Spring源码之ApplicationContext" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
-  
 
-<!-- 目录内容 -->
+
+    <div class="article-inner">
         
-            
-            <p class="show-toc-btn" id="show-toc-btn" onclick="showToc();" style="display:none">
-            <span class="btn-bg"></span>
-            <span class="btn-text">文章导航</span>
-            </p>
-
-            <div id="toc-article" class="toc-article">
-                <span id="toc-close" class="toc-close" title="隐藏导航" onclick="showBtn();">×</span>
-                <strong class="toc-title">文章目录</strong>
-
+            <header class="article-header">
                 
-           </div>
-
-           <script type="text/javascript">
-            function showToc(){
-                var toc_article = document.getElementById("toc-article");
-                var show_toc_btn = document.getElementById("show-toc-btn");
-                toc_article.setAttribute("style","display:block");
-                show_toc_btn.setAttribute("style","display:none");
-                };
-            function showBtn(){
-                var toc_article = document.getElementById("toc-article");
-                var show_toc_btn = document.getElementById("show-toc-btn");
-                toc_article.setAttribute("style","display:none");
-                show_toc_btn.setAttribute("style","display:block");
-                };
-           </script>
-             
-        <!-- 目录内容结束 -->
-
-
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
   
     <h1 class="article-title" itemprop="name">
       Spring源码之ApplicationContext
     </h1>
   
+  
 
-      </header>
-    
 
-    
-      <div class="article-meta">
-        <a href="/2019/02/27/Spring源码系列/Spring源码之ApplicationContext/" class="article-date">
+
+
+            </header>
+            
+
+
+
+                
+                    <div class="article-meta">
+                        <a href="/2019/02/27/Spring源码系列/Spring源码之ApplicationContext/" class="article-date">
   <time datetime="2019-02-26T16:00:00.000Z" itemprop="datePublished">2019-02-27</time>
 </a>
-        
+                            
   <div class="article-category">
     <a class="article-category-link" href="/categories/spring源码/">spring源码</a>
   </div>
 
-      </div>
-    
+                        &emsp;<i class="fe fe-bar-chart"></i> <span class="post-count">7k</span>字
+&emsp;<i class="fe fe-clock"></i> <span class="post-count">31</span>分钟
+                    </div>
 
-    <div class="article-entry" itemprop="articleBody">
-      
+                    
 
-      
 
-      
-        <p>​        本文是针对Srping的ClassPathXMLApplicationContext来进行源码解析,在本篇博客中将不会讲述spring Xml解析注册代码，因为ApplicationContext是BeanFactory的扩展版本，</p>
+
+
+                        
+                            
+
+
+
+
+                                
+
+                                    <div class="article-entry" itemprop="articleBody">
+                                        
+
+
+                                            
+
+                                                
+                                                                    <p>​        <span> </span></p>
 <a id="more"></a>
 
-<p>ApplicationContext的GetBean和xml解析注册BeanDefinition都是用一套代码，如果您是第一次看请先看一下XMLBeanFactory解析和BeanFactory.GetBean源码解析：</p>
+<p>​        本文是针对Srping的ClassPathXMLApplicationContext来进行源码解析,在本篇博客中将不会讲述spring Xml解析注册代码，因为ApplicationContext是BeanFactory的扩展版本，ApplicationContext的GetBean和xml解析注册BeanDefinition都是用一套代码，如果您是第一次看请先看一下XMLBeanFactory解析和BeanFactory.GetBean源码解析：</p>
 <blockquote>
 <ul>
 <li><strong>XMLBeanFactory源码解析地址：<a href="https://blog.csdn.net/qq_30257149/article/details/87972291" target="_blank" rel="noopener">https://blog.csdn.net/qq_30257149/article/details/87972291</a></strong></li>
@@ -110,7 +98,7 @@
 </ul>
 </blockquote>
 <ul>
-<li>接下来我们你直接上源码：</li>
+<li>接下来直接上源码：</li>
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> lantao;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.context.ApplicationContext;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.support.ClassPathXmlApplicationContext;</span><br><span class="line"><span class="keyword">import</span> org.springframework.lantao.UserBean;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ApplicationContextTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		ApplicationContext applicationContext = <span class="keyword">new</span> ClassPathXmlApplicationContext(<span class="string">"spring-bean.xml"</span>);</span><br><span class="line">		UserBean userBean = (UserBean) applicationContext.getBean(<span class="string">"userBean"</span>);</span><br><span class="line">		System.out.println(userBean.getName());</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -138,13 +126,13 @@
 <li><strong>对beanFactory进行各种功能填充</strong></li>
 <li><strong>允许在这里对BeanFactory的二次加工，例如：可以在这里进行硬编码方法的对BeanFactory进行BeanFactoryPostProcessor或BeanPostProcessor的操作；在这里简单说一下BeanFactoryPostProcessor是在bean实例化之前执行的，BeanPostProcessor是在初始化方法前后执行的，BeanFactoryPostProcessor操作的是BeanFactoryBeanPostProcessor操作的是Bean，其次这里还涉及了一个扩展BeanDefinitionRegistryPostProcessor它是继承了BeanFactoryPostProcessor，并且还有自己的定义方法 postProcessBeanDefinitionRegistry，这个方法可以操作BeanDefinitionRegistry，BeanDefinitionRegistry有个最主要的方法就是registerBeanDefinition，可以注册BeanDefinition，可以用这方法来处理一下不受spring管理的一下bean；</strong></li>
 <li><strong>处理所有的BeanFactoryPostProcessor，也可以说是激活BeanFactory处理器，在这个方法里会先处理BeanDefinitionRegistryPostProcessor，在处理BeanFactoryPostProcessor，因为BeanDefinitionRegistryPostProcessor有自己的定义，所以先执行；</strong></li>
-<li><strong>注册BeanPostProcessors ，这里只是注册，真正地调用在getBean的时候  BeanPostProcessors实在init方法前后执行  BeanPostProcessor执行位置：doCreateBean –&gt; initializeBean –&gt; applyBeanPostProcessorsBeforeInitialization 和 applyBeanPostProcessorsAfterInitialization方法中；</strong></li>
+<li><strong>注册BeanPostProcessors ，这里只是注册，真正地调用在getBean的时候  BeanPostProcessors是在init方法前后执行  BeanPostProcessor执行位置：doCreateBean –&gt; initializeBean –&gt; applyBeanPostProcessorsBeforeInitialization 和 applyBeanPostProcessorsAfterInitialization方法中；</strong></li>
 <li><strong>为上下文初始化Message源，（比如国际化处理） 这里没有过多深入；</strong></li>
 <li><strong>初始化应用消息广播，初始化 applicationEventMulticaster ，判断使用自定义的还是默认的；</strong></li>
 <li><strong>留给子类来初始化其它的bean；</strong></li>
 <li><strong>在所有注册的bean中查找 ApplicationListener bean，注册到消息广播器中；</strong></li>
 <li><strong>初始化剩下的单实例（非懒加载），这里会是涉及conversionService，LoadTimeWeaverAware，冻结BeanFactory，初始化Bean等操作；</strong></li>
-<li><strong>完成刷新过程，包括 清除 下文级资源(例如扫描的元数据)，通知生命周期护处理器lifecycleProcessor并strat，同时publish Event发出ContextRefreshEvent通知别人；</strong></li>
+<li><strong>完成刷新过程，包括 清除 下文级资源(例如扫描的元数据)，通知生命周期处理器lifecycleProcessor并strat，同时publish Event发出ContextRefreshEvent通知别人；</strong></li>
 </ol>
 </blockquote>
 <ul>
@@ -153,12 +141,12 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Prepare this context for refreshing, setting its startup date and</span></span><br><span class="line"><span class="comment"> * active flag as well as performing any initialization of property sources.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">prepareRefresh</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="comment">// Switch to active.</span></span><br><span class="line">	<span class="keyword">this</span>.startupDate = System.currentTimeMillis();</span><br><span class="line">    <span class="comment">// 标志，指示是否已关闭此上下文</span></span><br><span class="line">	<span class="keyword">this</span>.closed.set(<span class="keyword">false</span>);</span><br><span class="line">    <span class="comment">// 指示此上下文当前是否处于活动状态的标志</span></span><br><span class="line">	<span class="keyword">this</span>.active.set(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">		<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">			logger.trace(<span class="string">"Refreshing "</span> + <span class="keyword">this</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			logger.debug(<span class="string">"Refreshing "</span> + getDisplayName());</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Initialize any placeholder property sources in the context environment.</span></span><br><span class="line">	<span class="comment">// 对上下文环境中的任何属性源进行分类。</span></span><br><span class="line">	initPropertySources();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Validate that all properties marked as required are resolvable:</span></span><br><span class="line">	<span class="comment">// see ConfigurablePropertyResolver#setRequiredProperties，</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//验证标示为必填的属性信息是否都有了 ConfigurablePropertyResolver#setRequiredProperties 方法</span></span><br><span class="line">	getEnvironment().validateRequiredProperties();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Store pre-refresh ApplicationListeners...</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.earlyApplicationListeners == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">this</span>.earlyApplicationListeners = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(<span class="keyword">this</span>.applicationListeners);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// Reset local application listeners to pre-refresh state.</span></span><br><span class="line">		<span class="keyword">this</span>.applicationListeners.clear();</span><br><span class="line">		<span class="keyword">this</span>.applicationListeners.addAll(<span class="keyword">this</span>.earlyApplicationListeners);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Allow for the collection of early ApplicationEvents,</span></span><br><span class="line">	<span class="comment">// to be published once the multicaster is available...</span></span><br><span class="line">	<span class="keyword">this</span>.earlyApplicationEvents = <span class="keyword">new</span> LinkedHashSet&lt;&gt;();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <blockquote>
-<p>一眼望去，可能觉得这个方法没有做什么，其实这方法中除了Closed和Active最终要的是initPropertySources和getEnvironment().validateRequiredProperties()方法；</p>
+<p>一眼望去，可能觉得这个方法没有做什么，其实这方法中除了Closed和Active，最重要的是initPropertySources和getEnvironment().validateRequiredProperties()方法；</p>
 <ol>
 <li>initPropertySources证符合Spring的开放式结构设计，给用户最大扩展Spring的能力。用户可以根据自身的需要重写initPropertySourece方法，并在方法中进行个性化的属性处理及设置。</li>
 <li>validateRequiredProperties则是对属性进行验证，那么如何验证呢？举个融合两句代码的小例子来理解。</li>
 </ol>
-<p>例如现在有这样一个需求，工程在运行过程中用到的某个设置（例如VAR）是从系统环境变量中取得的，而如果用户没有在系统环境变量中配置这个参数，工程不会工作。这一要求也各种各样许有的解决办法，在Spring中可以这么做，可以直接修改Spring的源码，例如修改ClassPathXmlApplicationContext.淡然，最好的办法是对源码进行扩展，可以自定义类：</p>
+<p>例如现在有这样一个需求，工程在运行过程中用到的某个设置（例如VAR）是从系统环境变量中取得的，而如果用户没有在系统环境变量中配置这个参数，工程不会工作。这一要求也各种各样的解决办法，在Spring中可以这么做，可以直接修改Spring的源码，例如修改ClassPathXmlApplicationContext.当然，最好的办法是对源码进行扩展，可以自定义类：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&gt; <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyClassPathXmlApplicationContext</span> <span class="keyword">extends</span> <span class="title">ClassPathXmlApplicationContext</span></span>&#123;</span><br><span class="line">&gt;       <span class="function"><span class="keyword">public</span> <span class="title">MyClassPathXmlApplicationContext</span><span class="params">(String.. configLocations)</span></span>&#123;</span><br><span class="line">&gt;             <span class="keyword">super</span>(configLocations);</span><br><span class="line">&gt;        &#125;</span><br><span class="line">&gt;        <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initPropertySources</span><span class="params">()</span></span>&#123;</span><br><span class="line">&gt;              <span class="comment">//添加验证要求</span></span><br><span class="line">&gt;              getEnvironment().setRequiredProterties(<span class="string">"VAR"</span>)；</span><br><span class="line">&gt;        &#125;</span><br><span class="line">&gt; &#125;</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
 </blockquote>
 <blockquote>
@@ -330,21 +318,34 @@
 </ol>
 </blockquote>
 <p>至此ApplicationContext的源码就都已经分析完成了，其中有很多地方很难懂，大家可以对应着源码一起看，会好理解一些，如果其中有错误，欢迎大神指点，在下方留言，本篇博客是作者参考SPring 源码深度解析 + 自己的理解写出来的，算是一个学习后的的产出，最后，码字不易，转载请注明出处。</p>
-<p>博客地址：<a href="https://lantaogithub.github.io" target="_blank" rel="noopener">https://lantaogithub.github.io</a></p>
 
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://www.lantaoblog.site/2019/02/27/Spring源码系列/Spring源码之ApplicationContext/" data-id="cjzazijs9000imdx49yq2h8rs" class="article-share-link">分享</a>
-      
+                                                                        
+                                    </div>
+                                    <footer class="article-footer">
+
+
+
+
+                                    <img src="/images/ocean/BlogQR.png">
+
+
+
+
+
+
+
+                                        <a data-url="https://www.lantaoblog.site/2019/02/27/Spring源码系列/Spring源码之ApplicationContext/" data-id="ckgteilna000d4hx4ibmjj7us" class="article-share-link">
+                                            分享
+                                        </a>
+                                        
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ApplicationContext/">ApplicationContext</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/spring源码/">spring源码</a></li></ul>
 
-    </footer>
+                                    </footer>
 
-  </div>
+    </div>
 
-  
     
+        
   <nav class="article-nav">
     
       <a href="/2019/03/01/Spring源码系列/Srping源码之BeanFactory.getBean/" class="article-nav-link">
@@ -365,102 +366,76 @@
   </nav>
 
 
-  
+            
 
-  
-    
-  <div class="gitalk" id="gitalk-container"></div>
-  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
-  <script type="text/javascript">
-    var gitalk = new Gitalk({
-      clientID: 'eacf3314ff57a55108e0',
-      clientSecret: '267e4903bc9a8d92733ee6f4800a522de70384e1',
-      repo: 'lantaoGitHub.github.io',
-      owner: 'lantaoGitHub',
-      admin: ['lantaoGitHub'],
-      // id: location.pathname,      // Ensure uniqueness and length less than 50
-      id: md5(location.pathname),
-      distractionFreeMode: false,  // Facebook-like distraction free mode
-      pagerDirection: 'last'
-    })
+                
+                    
+    <div class="vcomments" id="vcomments"></div>
+    <script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+        <script>
+            new Valine({
+                el: '#vcomments',
+                appId: 'H7Nh6Kr1FbVOyb1CXa836VCt-gzGzoHsz',
+                appKey: 'St8IaqElFwAgVnPtR5uhga2C',
+                notify: 'false',
+                verify: 'true',
+                avatar: 'mp',
+                pageSize: '10',
+                placeholder: '请输入...'
+            })
+        </script>
+        
+                        
+                            
 
-  gitalk.render('gitalk-container')
-  </script>
 
-  
+
 
 </article>
-
-
-
 </section>
   <footer class="footer">
-  
   <div class="outer">
-    <ul align="center" class="list-inline">
-
-
-
-      
-
-      <li>&copy; 2019 七英里的旅行</li>
-      <li>Author:  <a href="https://lantaogithub.github.io/">兰涛</a></li>
-      <li>Email：lantao0518@sina.com </li>
-      
-<br>
-      <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
-</script>
-
  
-      <ul class="list-inline">
-  
-    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
-  
-</ul>
+    <ul class="list-inline">
+      <li>&copy; 2020 码农技术笔记</li>
+            <li> <span id="timeDate">载入天数...</span><span id="times">载入时分秒...</span>
+<script>
+    var now = new Date(); 
+    function createtime() { 
+        var grt= new Date("04/26/2019 15:49:00");//此处修改你的建站时间或者网站上线时间 
+        now.setTime(now.getTime()+250); 
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days); 
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours); 
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum); 
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;} 
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum); 
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;} 
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 "; 
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒"; 
+    } 
+	setInterval("createtime()",250);
+</script></li>
 
+      <li>全站共<span class="post-count">57.9k</span>字</li>
+            <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
 
-<span id="busuanzi_container_site_pv">
-    本站总访问量<span id="busuanzi_value_site_pv"></span>次
-</span>&nbsp&nbsp&nbsp
-<span id="busuanzi_container_site_uv">
-  本站访客数<span id="busuanzi_value_site_uv"></span>人次
-</span>
-
-
-      <!--
-      <li><a href="/">兰涛</a></li>
-      -->
     </ul>
-
-
-
-
-
-
-
   </div>
-
- 
-
 </footer>
-
 
 </main>
 <aside class="sidebar">
   <button class="navbar-toggle"></button>
-
 <nav class="navbar">
   
     <div class="logo">
-      <a href="/"><img src="/favicon.ico" alt="七英里的旅行"></a>
+      <a href="/"><img src="/images/hexo.svg" alt="码农技术笔记"></a>
     </div>
   
   <ul class="nav nav-main">
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/">主页</a>
+        <a class="nav-item-link" href="/">首页</a>
       </li>
     
       <li class="nav-item">
@@ -472,7 +447,7 @@
       </li>
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/tags">标签云</a>
+        <a class="nav-item-link" href="/tags">标签</a>
       </li>
     
       <li class="nav-item">
@@ -480,21 +455,20 @@
       </li>
     
     <li class="nav-item">
-      <a class="nav-item-link nav-item-search" title="Search">
+      <a class="nav-item-link nav-item-search" title="搜索">
         <i class="fe fe-search"></i>
         搜索
       </a>
     </li>
   </ul>
 </nav>
-
 <nav class="navbar navbar-bottom">
   <ul class="nav">
-      <li class="nav-item">
-          <div class="totop" id="totop">
-    <i class="fe fe-rocket"></i>
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
 </div>
-      </li>
+    </li>
     <li class="nav-item">
       
         <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
@@ -504,7 +478,6 @@
     </li>
   </ul>
 </nav>
-
 <div class="search-form-wrap">
   <div class="local-search local-search-plugin">
   <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
@@ -513,15 +486,28 @@
 </div>
 </aside>
 <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.justifiedGallery.min.js"></script>
 <script src="/js/lazyload.min.js"></script>
 <script src="/js/busuanzi-2.3.pure.min.js"></script>
-
 
   <script src="/fancybox/jquery.fancybox.min.js"></script>
 
 
 
-  <script src="/js/search.js"></script>
+  <script src="/js/tocbot.min.js"></script>
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
 
 
 <script src="/js/ocean.js"></script>

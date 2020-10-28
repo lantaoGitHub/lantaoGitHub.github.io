@@ -5,15 +5,15 @@
   
   
   
-    <meta name="description" content="最怕一生碌碌无为，还说平凡难得可贵">
+    <meta name="description" content="业精于勤荒于嬉，行成于思毁于随">
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
     数组 |
     
-    七英里的旅行</title>
+    码农技术笔记</title>
   
-    <link rel="shortcut icon" href="/source">
+    <link rel="shortcut icon" href="/favicon.ico">
   
   <link rel="stylesheet" href="/css/style.css">
   
@@ -26,153 +26,136 @@
 <main class="content">
   <section class="outer">
   <article id="post-数据结构学习笔记/数组" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
-  
 
-<!-- 目录内容 -->
+
+    <div class="article-inner">
         
-            
-            <p class="show-toc-btn" id="show-toc-btn" onclick="showToc();" style="display:none">
-            <span class="btn-bg"></span>
-            <span class="btn-text">文章导航</span>
-            </p>
-
-            <div id="toc-article" class="toc-article">
-                <span id="toc-close" class="toc-close" title="隐藏导航" onclick="showBtn();">×</span>
-                <strong class="toc-title">文章目录</strong>
-
-                <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#数组概念"><span class="toc-text">数组概念</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#线性表"><span class="toc-text">线性表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#非线性表"><span class="toc-text">非线性表</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数组随机访问"><span class="toc-text">数组随机访问</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#公式"><span class="toc-text">公式</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数组的增加和删除"><span class="toc-text">数组的增加和删除</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#低效的”插入”和”删除”"><span class="toc-text">低效的”插入”和”删除”</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#插入"><span class="toc-text">插入</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#删除"><span class="toc-text">删除</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#CPU缓存"><span class="toc-text">CPU缓存**</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#测试数组和Cpu缓存行"><span class="toc-text">测试数组和Cpu缓存行</span></a></li></ol></li></ol>
-           </div>
-
-           <script type="text/javascript">
-            function showToc(){
-                var toc_article = document.getElementById("toc-article");
-                var show_toc_btn = document.getElementById("show-toc-btn");
-                toc_article.setAttribute("style","display:block");
-                show_toc_btn.setAttribute("style","display:none");
-                };
-            function showBtn(){
-                var toc_article = document.getElementById("toc-article");
-                var show_toc_btn = document.getElementById("show-toc-btn");
-                toc_article.setAttribute("style","display:none");
-                show_toc_btn.setAttribute("style","display:block");
-                };
-           </script>
-             
-        <!-- 目录内容结束 -->
-
-
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
+            <header class="article-header">
+                
   
     <h1 class="article-title" itemprop="name">
       数组
     </h1>
   
+  
 
-      </header>
-    
 
-    
-      <div class="article-meta">
-        <a href="/2019/06/21/数据结构学习笔记/数组/" class="article-date">
+
+
+            </header>
+            
+
+
+
+                
+                    <div class="article-meta">
+                        <a href="/2019/06/21/数据结构学习笔记/数组/" class="article-date">
   <time datetime="2019-06-20T16:00:00.000Z" itemprop="datePublished">2019-06-21</time>
 </a>
-        
+                            
   <div class="article-category">
     <a class="article-category-link" href="/categories/数据结构/">数据结构</a>
   </div>
 
-      </div>
-    
+                        &emsp;<i class="fe fe-bar-chart"></i> <span class="post-count">1.1k</span>字
+&emsp;<i class="fe fe-clock"></i> <span class="post-count">4</span>分钟
+                    </div>
 
-    <div class="article-entry" itemprop="articleBody">
-      
-
-      
-  <div class="article-gallery">
-    <div class="article-gallery-photos">
-      
-        
-          <img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/数组.jpg" itemprop="image">
-        
-      
-    </div>
-  </div>
+                    
 
 
-      
-        <p>数据结构课程学习笔记。</p>
+
+
+                        
+                            
+    <div class="tocbot"></div>
+
+
+
+
+
+                                
+
+                                    <div class="article-entry" itemprop="articleBody">
+                                        
+
+
+                                            
+
+                                                
+                                                                    <p><span> </span></p>
 <a id="more"></a>
 
+<p>​        数据结构课程学习笔记。</p>
 <h2 id="数组概念"><a href="#数组概念" class="headerlink" title="数组概念"></a>数组概念</h2><p><strong>数组</strong>（Array）是一种<strong>线性表数据结构</strong>。它用一组<strong>连续</strong>的<strong>内存空间</strong>，来存储一组具有<strong>相同类型的数据</strong>, 并且<strong>不支持动态扩容。</strong></p>
-<ul>
-<li><h3 id="线性表"><a href="#线性表" class="headerlink" title="线性表"></a><strong>线性表</strong></h3><p>线性表就是数据排成一条线一样的数据结构，每个线性表最多只有前后两个方向，数组，链表丶队列丶栈等都是线性表数据结构。</p>
-</li>
-<li><h3 id="非线性表"><a href="#非线性表" class="headerlink" title="非线性表"></a><strong>非线性表</strong></h3><p>非线性表就是数据不规则，与线性表是相对立的，比如二叉树丶堆丶等，在非线性表中，数据之间并不是简单的前后关系。</p>
-</li>
-</ul>
-<h2 id="数组随机访问"><a href="#数组随机访问" class="headerlink" title="数组随机访问"></a><strong>数组随机访问</strong></h2><ul>
-<li><h3 id="公式"><a href="#公式" class="headerlink" title="公式"></a><strong>公式</strong></h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">address[i] = base_address + i * data_type_size</span><br></pre></td></tr></table></figure>
+<h3 id="线性表"><a href="#线性表" class="headerlink" title="线性表"></a>线性表</h3><p>线性表就是数据排成一条线一样的数据结构，每个线性表最多只有前后两个方向，数组，链表丶队列丶栈等都是线性表数据结构。</p>
+<h3 id="非线性表"><a href="#非线性表" class="headerlink" title="非线性表"></a>非线性表</h3><p>非线性表就是数据不规则，与线性表是相对立的，比如二叉树丶堆丶等，在非线性表中，数据之间并不是简单的前后关系。</p>
+<h2 id="数组随机访问"><a href="#数组随机访问" class="headerlink" title="数组随机访问"></a>数组随机访问</h2><h3 id="公式"><a href="#公式" class="headerlink" title="公式"></a>公式</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">address[i] = base_address + i * data_type_size</span><br></pre></td></tr></table></figure>
 
 <p><strong>address[i] :</strong> 下标 i 的地址值。</p>
 <p><strong>base_address：</strong> 数组的<strong>首地址</strong>。</p>
 <p><strong>data_type_size：</strong> 数组中每个元素的大小，也就是数据类型大小(字节)，例如int是4个字节。</p>
-</li>
-</ul>
-<h2 id="数组的增加和删除"><a href="#数组的增加和删除" class="headerlink" title="数组的增加和删除"></a><strong>数组的增加和删除</strong></h2><p><strong>数组</strong> (Array) 在<strong>增删查</strong>这三个动作中，查询是高效的，但是增和删是低效的，查询高效是因为<strong>数组支持随机访问</strong>，时间复杂度是 <strong>O(1)</strong> ,这里就不多赘述了，但是在<strong>增加</strong>和<strong>删除</strong>的动作中，因为会涉及<strong>数据搬移</strong>，所以时间复杂度是 <strong>O(n)</strong> ，下面来详细讲解。</p>
-<ul>
-<li><h4 id="低效的”插入”和”删除”"><a href="#低效的”插入”和”删除”" class="headerlink" title="低效的”插入”和”删除”"></a><strong>低效的”插入”和”删除”</strong></h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span>[] info = <span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">6</span>];</span><br></pre></td></tr></table></figure>
+<h2 id="数组的增加和删除"><a href="#数组的增加和删除" class="headerlink" title="数组的增加和删除"></a>数组的增加和删除</h2><p><strong>数组</strong> (Array) 在<strong>增删查</strong>这三个动作中，查询是高效的，但是增和删是低效的，查询高效是因为<strong>数组支持随机访问</strong>，时间复杂度是 <strong>O(1)</strong> ,这里就不多赘述了，但是在<strong>增加</strong>和<strong>删除</strong>的动作中，因为会涉及<strong>数据搬移</strong>，所以时间复杂度是 <strong>O(n)</strong> ，下面来详细讲解。</p>
+<h4 id="低效的”插入”和”删除”"><a href="#低效的”插入”和”删除”" class="headerlink" title="低效的”插入”和”删除”"></a>低效的”插入”和”删除”</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span>[] info = <span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">6</span>];</span><br></pre></td></tr></table></figure>
 
-<h4 id="插入"><a href="#插入" class="headerlink" title="插入"></a><strong>插入</strong></h4><p>数组 <strong>info</strong> 是一个<strong>一维数组</strong>，其内容是 <strong>33,44,66,77,88</strong> 现在需要在<strong>下标 2</strong> 的位置<strong>插入</strong> <strong>55</strong> ，将其变成<strong>33 44 55 66 77 88</strong>的数组，这其中涉及将下标 <strong>2</strong> 到下标 <strong>4</strong> 的之间进行数据进行搬移，完成后在下标 <strong>2</strong> 的位置插入 <strong>55</strong> , <strong>其复杂度是 O(n)， 但如果是在最后进行插入的话其复杂度是 O(1)</strong>。</p>
+<h4 id="插入"><a href="#插入" class="headerlink" title="插入"></a>插入</h4><p>数组 <strong>info</strong> 是一个<strong>一维数组</strong>，其内容是 <strong>33,44,66,77,88</strong> 现在需要在<strong>下标 2</strong> 的位置<strong>插入</strong> <strong>55</strong> ，将其变成<strong>33 44 55 66 77 88</strong>的数组，这其中涉及将下标 <strong>2</strong> 到下标 <strong>4</strong> 的之间进行数据进行搬移，完成后在下标 <strong>2</strong> 的位置插入 <strong>55</strong> , <strong>其复杂度是 O(n)， 但如果是在最后进行插入的话其复杂度是 O(1)</strong>。</p>
 <p><img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/%E6%95%B0%E7%BB%84%E6%8F%92%E5%85%A5%E5%86%85%E5%AD%98%E5%9B%BE.jpg" alt></p>
-<h4 id="删除"><a href="#删除" class="headerlink" title="删除"></a><strong>删除</strong></h4><p>还拿<strong>数组 info</strong> 来举例，数组删除前其内容是 <strong>33,44,00,55,66,77</strong> 现在进行删除操作，删除下标为 <strong>2</strong> 内容，这其中涉及<strong>将下标 3 到 5 的内容向前搬移</strong>，其操作的时间复杂度是 <strong>O(n)</strong> ，如果是是<strong>删除最后一位且后面没有内容</strong>，则其时间复杂度是<strong>O(1)</strong> 。</p>
+<h4 id="删除"><a href="#删除" class="headerlink" title="删除"></a>删除</h4><p>还拿<strong>数组 info</strong> 来举例，数组删除前其内容是 <strong>33,44,00,55,66,77</strong> 现在进行删除操作，删除下标为 <strong>2</strong> 内容，这其中涉及<strong>将下标 3 到 5 的内容向前搬移</strong>，其操作的时间复杂度是 <strong>O(n)</strong> ，如果是是<strong>删除最后一位且后面没有内容</strong>，则其时间复杂度是<strong>O(1)</strong> 。</p>
 <p><img src="https://raw.githubusercontent.com/lantaoGitHub/photos/master/Concurrency/%E6%95%B0%E7%BB%84%E5%88%A0%E9%99%A4%E5%86%85%E5%AD%98%E5%9B%BE.jpg" alt></p>
 <p>因<strong>插入和删除操作</strong>会涉及到<strong>数据搬移</strong>,所以说他是<strong>低效</strong>的。</p>
-</li>
-</ul>
-<h4 id="CPU缓存"><a href="#CPU缓存" class="headerlink" title="CPU缓存**"></a>CPU缓存**</h4><p>  Cpu缓存的<strong>最小单位</strong>是<strong>Cpu缓存行</strong>，一个缓存行大小通常是<strong>64字节</strong>(取决于CPU)，试想一下你正在遍历一个长度为 16 的 long 数组 data[16]，原始数据自然存在于主内存中，访问过程描述如下：</p>
-<p>  1：访问 data[0]，CPU core 尝试访问 CPU Cache，未命中。</p>
-<p>  2：尝试访问主内存，操作系统一次访问的单位是一个 Cache Line 的大小 — 64 字节，这意味着：既从主内存中获取3：到了 data[0] 的值，同时将 data[0] ~ data[7] 加入到了 CPU Cache 之中，</p>
-<p>  4：访问 data[1]~data[7]，CPU core 尝试访问 CPU Cache，命中直接返回。</p>
-<p>  5：访问 data[8]，CPU core 尝试访问 CPU Cache，未命中, 尝试访问主存，重复步骤2。</p>
-<h4 id="测试数组和Cpu缓存行"><a href="#测试数组和Cpu缓存行" class="headerlink" title="测试数组和Cpu缓存行"></a><strong>测试数组和Cpu缓存行</strong></h4><p>  因Cpu缓存最小单位是<strong>缓存行(64字节)</strong>，我么来测试一下二维数组的<strong>横向遍历</strong>和<strong>纵向遍历</strong>的具体时间和性能。</p>
-<p>  <strong>代码</strong></p>
-  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.com.array;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Auther</span>: lantao</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: 2019-06-24 15:52</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Company</span>: 随行付支付有限公司</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@maill</span>: lan_tao@suixingpay.com</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: TODO</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ArrayTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">long</span>[][] arr;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> sum = <span class="number">0L</span>;</span><br><span class="line">        arr = <span class="keyword">new</span> <span class="keyword">long</span>[<span class="number">1024</span> * <span class="number">1024</span>][<span class="number">10</span>];</span><br><span class="line">        <span class="comment">// 横向遍历</span></span><br><span class="line">        <span class="keyword">long</span> l = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1024</span> * <span class="number">1024</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">10</span>; j++) &#123;</span><br><span class="line">                sum += arr[i][j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"Loop Time 横向遍历："</span> + (System.currentTimeMillis() - l) + <span class="string">"ms"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> l1 = System.currentTimeMillis();</span><br><span class="line">        <span class="comment">// 纵向遍历</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">1024</span> * <span class="number">1024</span>; j++) &#123;</span><br><span class="line">                sum += arr[j][i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"Loop Time 纵向遍历："</span> + (System.currentTimeMillis() - l) + <span class="string">"ms"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="CPU缓存"><a href="#CPU缓存" class="headerlink" title="CPU缓存"></a>CPU缓存</h4><p>Cpu缓存的<strong>最小单位</strong>是<strong>Cpu缓存行</strong>，一个缓存行大小通常是<strong>64字节</strong>(取决于CPU)，试想一下你正在遍历一个长度为 16 的 long 数组 data[16]，原始数据自然存在于主内存中，访问过程描述如下：</p>
+<p>1：访问 data[0]，CPU core 尝试访问 CPU Cache，未命中。</p>
+<p>2：尝试访问主内存，操作系统一次访问的单位是一个 Cache Line 的大小 — 64 字节，这意味着：既从主内存中获取3：到了 data[0] 的值，同时将 data[0] ~ data[7] 加入到了 CPU Cache 之中，</p>
+<p>4：访问 data[1]~data[7]，CPU core 尝试访问 CPU Cache，命中直接返回。</p>
+<p>5：访问 data[8]，CPU core 尝试访问 CPU Cache，未命中, 尝试访问主存，重复步骤2。</p>
+<h4 id="测试数组和Cpu缓存行"><a href="#测试数组和Cpu缓存行" class="headerlink" title="测试数组和Cpu缓存行"></a>测试数组和Cpu缓存行</h4><p>因Cpu缓存最小单位是<strong>缓存行(64字节)</strong>，我么来测试一下二维数组的<strong>横向遍历</strong>和<strong>纵向遍历</strong>的具体时间和性能。</p>
+<p><strong>代码</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.com.array;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Auther</span>: lantao</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: 2019-06-24 15:52</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Company</span>: 随行付支付有限公司</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@maill</span>: lan_tao@suixingpay.com</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: TODO</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ArrayTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">long</span>[][] arr;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> sum = <span class="number">0L</span>;</span><br><span class="line">        arr = <span class="keyword">new</span> <span class="keyword">long</span>[<span class="number">1024</span> * <span class="number">1024</span>][<span class="number">10</span>];</span><br><span class="line">        <span class="comment">// 横向遍历</span></span><br><span class="line">        <span class="keyword">long</span> l = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1024</span> * <span class="number">1024</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">10</span>; j++) &#123;</span><br><span class="line">                sum += arr[i][j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"Loop Time 横向遍历："</span> + (System.currentTimeMillis() - l) + <span class="string">"ms"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> l1 = System.currentTimeMillis();</span><br><span class="line">        <span class="comment">// 纵向遍历</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">1024</span> * <span class="number">1024</span>; j++) &#123;</span><br><span class="line">                sum += arr[j][i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"Loop Time 纵向遍历："</span> + (System.currentTimeMillis() - l1) + <span class="string">"ms"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">结果：</span><br><span class="line">Loop Time 横向遍历：<span class="number">14</span>ms</span><br><span class="line">Loop Time 纵向遍历：<span class="number">83</span>ms</span><br></pre></td></tr></table></figure>
+
+<p><strong>总结：</strong> 因<strong>横向遍历</strong>遍历的是<strong>行</strong>，然后在循环<strong>行的每一列</strong>，Cpu缓存会<strong>缓存64字节大小的缓存行</strong>，所以可以减少<strong>cpu和主存之间的交互</strong>，<strong>直接和高速缓存交互，提升性能</strong>，纵向遍历因每次循环都是不同的行，所以使缓存行没有作用。</p>
+
+                                                                        
+                                    </div>
+                                    <footer class="article-footer">
 
 
-  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">结果：</span><br><span class="line">Loop Time 横向遍历：<span class="number">14</span>ms</span><br><span class="line">Loop Time 纵向遍历：<span class="number">83</span>ms</span><br></pre></td></tr></table></figure>
 
 
-<p>  <strong>总结：</strong> 因<strong>横向遍历</strong>遍历的是<strong>行</strong>，然后在循环<strong>行的每一列</strong>，Cpu缓存会<strong>缓存64字节大小的缓存行</strong>，所以可以减少<strong>cpu和主存之间的交互</strong>，<strong>直接和高速缓存交互，提升性能</strong>，纵向遍历因每次循环都是不同的行，所以使缓存行没有作用。</p>
+                                    <img src="/images/ocean/BlogQR.png">
 
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://www.lantaoblog.site/2019/06/21/数据结构学习笔记/数组/" data-id="cjzazijsc000nmdx4ywbxxnh7" class="article-share-link">分享</a>
-      
+
+
+
+
+
+
+                                        <a data-url="https://www.lantaoblog.site/2019/06/21/数据结构学习笔记/数组/" data-id="ckgteilng000o4hx4haj04xpc" class="article-share-link">
+                                            分享
+                                        </a>
+                                        
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Array/">Array</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/数据结构/">数据结构</a></li></ul>
 
-    </footer>
+                                    </footer>
 
-  </div>
+    </div>
 
-  
     
+        
   <nav class="article-nav">
     
-      <a href="/2019/08/14/Spring源码系列/Spring源码之Aop/" class="article-nav-link">
+      <a href="/2019/06/24/Lock源码系列/AbstractQueuedSynchronizer源码理解/" class="article-nav-link">
         <strong class="article-nav-caption">前一篇</strong>
         <div class="article-nav-title">
           
-            Spring源码之Aop
+            AbstractQueuedSynchronizer源码解析
           
         </div>
       </a>
     
     
-      <a href="/2019/06/19/java基础/String的intern方法详解/" class="article-nav-link">
+      <a href="/2019/06/19/Groovy/Groovy基础语法/" class="article-nav-link">
         <strong class="article-nav-caption">后一篇</strong>
         <div class="article-nav-title">String#intern方法详解</div>
       </a>
@@ -180,102 +163,76 @@
   </nav>
 
 
-  
+            
 
-  
-    
-  <div class="gitalk" id="gitalk-container"></div>
-  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
-  <script type="text/javascript">
-    var gitalk = new Gitalk({
-      clientID: 'eacf3314ff57a55108e0',
-      clientSecret: '267e4903bc9a8d92733ee6f4800a522de70384e1',
-      repo: 'lantaoGitHub.github.io',
-      owner: 'lantaoGitHub',
-      admin: ['lantaoGitHub'],
-      // id: location.pathname,      // Ensure uniqueness and length less than 50
-      id: md5(location.pathname),
-      distractionFreeMode: false,  // Facebook-like distraction free mode
-      pagerDirection: 'last'
-    })
+                
+                    
+    <div class="vcomments" id="vcomments"></div>
+    <script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+        <script>
+            new Valine({
+                el: '#vcomments',
+                appId: 'H7Nh6Kr1FbVOyb1CXa836VCt-gzGzoHsz',
+                appKey: 'St8IaqElFwAgVnPtR5uhga2C',
+                notify: 'false',
+                verify: 'true',
+                avatar: 'mp',
+                pageSize: '10',
+                placeholder: '请输入...'
+            })
+        </script>
+        
+                        
+                            
 
-  gitalk.render('gitalk-container')
-  </script>
 
-  
+
 
 </article>
-
-
-
 </section>
   <footer class="footer">
-  
   <div class="outer">
-    <ul align="center" class="list-inline">
-
-
-
-      
-
-      <li>&copy; 2019 七英里的旅行</li>
-      <li>Author:  <a href="https://lantaogithub.github.io/">兰涛</a></li>
-      <li>Email：lantao0518@sina.com </li>
-      
-<br>
-      <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js">
-</script>
-
  
-      <ul class="list-inline">
-  
-    <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
-  
-</ul>
+    <ul class="list-inline">
+      <li>&copy; 2020 码农技术笔记</li>
+            <li> <span id="timeDate">载入天数...</span><span id="times">载入时分秒...</span>
+<script>
+    var now = new Date(); 
+    function createtime() { 
+        var grt= new Date("04/26/2019 15:49:00");//此处修改你的建站时间或者网站上线时间 
+        now.setTime(now.getTime()+250); 
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days); 
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours); 
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum); 
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;} 
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum); 
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;} 
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 "; 
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒"; 
+    } 
+	setInterval("createtime()",250);
+</script></li>
 
+      <li>全站共<span class="post-count">57.9k</span>字</li>
+            <li>Theme  <a href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
 
-<span id="busuanzi_container_site_pv">
-    本站总访问量<span id="busuanzi_value_site_pv"></span>次
-</span>&nbsp&nbsp&nbsp
-<span id="busuanzi_container_site_uv">
-  本站访客数<span id="busuanzi_value_site_uv"></span>人次
-</span>
-
-
-      <!--
-      <li><a href="/">兰涛</a></li>
-      -->
     </ul>
-
-
-
-
-
-
-
   </div>
-
- 
-
 </footer>
-
 
 </main>
 <aside class="sidebar">
   <button class="navbar-toggle"></button>
-
 <nav class="navbar">
   
     <div class="logo">
-      <a href="/"><img src="/favicon.ico" alt="七英里的旅行"></a>
+      <a href="/"><img src="/images/hexo.svg" alt="码农技术笔记"></a>
     </div>
   
   <ul class="nav nav-main">
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/">主页</a>
+        <a class="nav-item-link" href="/">首页</a>
       </li>
     
       <li class="nav-item">
@@ -287,7 +244,7 @@
       </li>
     
       <li class="nav-item">
-        <a class="nav-item-link" href="/tags">标签云</a>
+        <a class="nav-item-link" href="/tags">标签</a>
       </li>
     
       <li class="nav-item">
@@ -295,21 +252,20 @@
       </li>
     
     <li class="nav-item">
-      <a class="nav-item-link nav-item-search" title="Search">
+      <a class="nav-item-link nav-item-search" title="搜索">
         <i class="fe fe-search"></i>
         搜索
       </a>
     </li>
   </ul>
 </nav>
-
 <nav class="navbar navbar-bottom">
   <ul class="nav">
-      <li class="nav-item">
-          <div class="totop" id="totop">
-    <i class="fe fe-rocket"></i>
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
 </div>
-      </li>
+    </li>
     <li class="nav-item">
       
         <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
@@ -319,7 +275,6 @@
     </li>
   </ul>
 </nav>
-
 <div class="search-form-wrap">
   <div class="local-search local-search-plugin">
   <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
@@ -328,15 +283,28 @@
 </div>
 </aside>
 <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.justifiedGallery.min.js"></script>
 <script src="/js/lazyload.min.js"></script>
 <script src="/js/busuanzi-2.3.pure.min.js"></script>
-
 
   <script src="/fancybox/jquery.fancybox.min.js"></script>
 
 
 
-  <script src="/js/search.js"></script>
+  <script src="/js/tocbot.min.js"></script>
+  <script>
+    // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+    tocbot.init({
+      tocSelector: '.tocbot',
+      contentSelector: '.article-entry',
+      headingSelector: 'h1, h2, h3, h4, h5, h6',
+      hasInnerContainers: true,
+      scrollSmooth: true,
+      positionFixedSelector: '.tocbot',
+      positionFixedClass: 'is-position-fixed',
+      fixedSidebarOffset: 'auto',
+    });
+  </script>
 
 
 <script src="/js/ocean.js"></script>
